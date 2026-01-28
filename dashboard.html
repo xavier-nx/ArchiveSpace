@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ArchiveSpace</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="dashboard.html">
+                <i class="bi bi-archive"></i> ArchiveSpace
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="dashboard.html">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-folder"></i> Archivístico
+                        </a>
+                        <ul class="dropdown-menu">
+                            <!-- CORRECCIÓN: Enlaces al Sprint 2 -->
+                            <li><a class="dropdown-item" href="resources.html">
+                                <i class="bi bi-folder"></i> Recursos
+                            </a></li>
+                            <li><a class="dropdown-item" href="accessions.html">
+                                <i class="bi bi-box-arrow-in-down"></i> Accesiones
+                            </a></li>
+                            <li><a class="dropdown-item" href="agents.html">
+                                <i class="bi bi-people"></i> Agentes
+                            </a></li>
+                            <li><a class="dropdown-item" href="subjects.html">
+                                <i class="bi bi-tags"></i> Sujetos
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="instances.html">
+                                <i class="bi bi-box"></i> Instancias y Contenedores
+                            </a></li>
+                            <li><a class="dropdown-item" href="finding-aids.html">
+                                <i class="bi bi-file-text"></i> Finding Aids
+                            </a></li>
+                        </ul>
+                    </li>
+                    <!-- CORRECCIÓN: Enlaces funcionales -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="search.html">
+                            <i class="bi bi-search"></i> Búsqueda
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-arrow-left-right"></i> Importar/Exportar
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="import-export.html">
+                                <i class="bi bi-upload"></i> Importar
+                            </a></li>
+                            <li><a class="dropdown-item" href="import-export.html">
+                                <i class="bi bi-download"></i> Exportar
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <span id="currentUser">Usuario</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header" id="userRole">Rol: Cargando...</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="admin-usuarios.html">
+                                <i class="bi bi-people"></i> Administrar Usuarios
+                            </a></li>
+                            <li><a class="dropdown-item" href="configuracion.html">
+                                <i class="bi bi-gear"></i> Configuración
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">
+                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
+                        <span>Repositorios</span>
+                    </h6>
+                    <ul class="nav flex-column mb-2" id="repositoriesList">
+                        <!-- Repositories will be loaded here -->
+                    </ul>
+                    
+                    <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
+                        <span>Acciones Rápidas</span>
+                    </h6>
+                    <ul class="nav flex-column">
+                        <!-- CORRECCIÓN: Enlaces funcionales del Sprint 2 -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="resources.html" data-bs-toggle="modal" data-bs-target="#quickResourceModal">
+                                <i class="bi bi-plus-circle"></i> Nuevo Recurso
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="accessions.html" data-bs-toggle="modal" data-bs-target="#quickAccessionModal">
+                                <i class="bi bi-box-arrow-in-down"></i> Nueva Accesión
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="agents.html" data-bs-toggle="modal" data-bs-target="#quickAgentModal">
+                                <i class="bi bi-person-plus"></i> Nuevo Agente
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="subjects.html" data-bs-toggle="modal" data-bs-target="#quickSubjectModal">
+                                <i class="bi bi-tags"></i> Nuevo Sujeto
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="import-export.html">
+                                <i class="bi bi-upload"></i> Importar EAD
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="import-export.html">
+                                <i class="bi bi-download"></i> Exportar CSV
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Dashboard -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- Dashboard Header -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Dashboard</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshDashboard()">
+                                <i class="bi bi-arrow-clockwise"></i> Actualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-white bg-primary">
+                            <div class="card-body">
+                                <h5 class="card-title" id="totalResources">0</h5>
+                                <p class="card-text">Recursos</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-white bg-success">
+                            <div class="card-body">
+                                <h5 class="card-title" id="totalAccessions">0</h5>
+                                <p class="card-text">Accesiones</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-white bg-warning">
+                            <div class="card-body">
+                                <h5 class="card-title" id="totalAgents">0</h5>
+                                <p class="card-text">Agentes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-white bg-info">
+                            <div class="card-body">
+                                <h5 class="card-title" id="totalSubjects">0</h5>
+                                <p class="card-text">Sujetos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & Quick Actions -->
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="bi bi-clock-history"></i> Actividad Reciente
+                                <button class="btn btn-sm btn-outline-secondary float-end" onclick="loadRecentActivity()">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Usuario</th>
+                                                <th>Acción</th>
+                                                <th>Fecha</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="activityTable">
+                                            <!-- Activity will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="bi bi-lightning"></i> Acciones Rápidas
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <!-- CORRECCIÓN: Botones funcionales del Sprint 2 -->
+                                    <button class="btn btn-outline-primary" id="quickResource" onclick="window.location.href='resources.html'">
+                                        <i class="bi bi-folder-plus"></i> Nuevo Recurso
+                                    </button>
+                                    <button class="btn btn-outline-success" id="quickAccession" onclick="window.location.href='accessions.html'">
+                                        <i class="bi bi-box-arrow-in-down"></i> Nueva Accesión
+                                    </button>
+                                    <button class="btn btn-outline-warning" id="quickAgent" onclick="window.location.href='agents.html'">
+                                        <i class="bi bi-person-plus"></i> Nuevo Agente
+                                    </button>
+                                    <button class="btn btn-outline-info" id="quickSubject" onclick="window.location.href='subjects.html'">
+                                        <i class="bi bi-tags"></i> Nuevo Sujeto
+                                    </button>
+                                    <button class="btn btn-outline-secondary" id="quickSearch" onclick="window.location.href='search.html'">
+                                        <i class="bi bi-search"></i> Búsqueda Avanzada
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <i class="bi bi-info-circle"></i> Información del Sistema
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Versión:</strong> 2.0.0 (Sprint 2)</p>
+                                <p><strong>Repositorio activo:</strong> <span id="activeRepo">General</span></p>
+                                <p><strong>Usuarios conectados:</strong> <span id="connectedUsers">1</span></p>
+                                <p><strong>Última actividad:</strong> <span id="lastActivity">Hoy</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Quick Create Modals (simplificados) -->
+    <div class="modal fade" id="quickResourceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Crear Recurso Rápido</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Redirigiendo a la página de creación de recursos...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='resources.html'">
+                        Continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <!-- Dashboard JS -->
+    <script src="js/dashboard.js"></script>
+    <script src="js/common.js"></script>
+    <!-- CORRECCIÓN: Añadir el módulo del Sprint 2 -->
+    <script src="js/sprint2-common.js"></script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sujetos - ArchiveSpace</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="dashboard.html">
+                <i class="bi bi-archive"></i> ArchiveSpace
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#subjectsNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="subjectsNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link active dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-folder"></i> Archivístico
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="resources.html">Recursos</a></li>
+                            <li><a class="dropdown-item" href="accessions.html">Accesiones</a></li>
+                            <li><a class="dropdown-item" href="agents.html">Agentes</a></li>
+                            <li><a class="dropdown-item active" href="subjects.html">Sujetos</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <span class="nav-link">
+                            <i class="bi bi-person-circle"></i> <span id="currentUser">Usuario</span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <main class="col-md-12">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="bi bi-tags"></i> Gestión de Sujetos / Temas
+                    </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+                            <i class="bi bi-plus-circle"></i> Nuevo Sujeto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Subjects Table -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="subjectsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Término</th>
+                                        <th>ID de Autoridad</th>
+                                        <th>Nota de Alcance</th>
+                                        <th>Recursos</th>
+                                        <th>Accesiones</th>
+                                        <th>Agentes</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Subjects will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Cloud -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="bi bi-cloud"></i> Nube de Términos
+                    </div>
+                    <div class="card-body">
+                        <div id="subjectCloud" class="d-flex flex-wrap gap-2">
+                            <!-- Subject cloud will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Subject Modal -->
+    <div class="modal fade" id="addSubjectModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo Sujeto / Tema</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSubjectForm">
+                        <div class="mb-3">
+                            <label class="form-label">Término *</label>
+                            <input type="text" class="form-control" id="subjectTerm" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">ID de Autoridad (LCSH, TGM, etc.)</label>
+                            <input type="text" class="form-control" id="subjectAuthorityId">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nota de Alcance</label>
+                            <textarea class="form-control" id="subjectScopeNote" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Sujeto</label>
+                            <select class="form-select" id="subjectType">
+                                <option value="topical">Tópico</option>
+                                <option value="geographic">Geográfico</option>
+                                <option value="temporal">Temporal</option>
+                                <option value="genre">Género/Forma</option>
+                                <option value="occupation">Ocupación</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Términos Relacionados</label>
+                            <select class="form-select" id="subjectRelated" multiple>
+                                <!-- Other subjects will be populated -->
+                            </select>
+                            <small class="text-muted">Mantenga Ctrl para seleccionar múltiples términos relacionados</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveSubjectBtn">Guardar Sujeto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- Subjects JS -->
+    <script src="js/subjects.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/sprint2-common.js"></script>
+</body>
+</html>

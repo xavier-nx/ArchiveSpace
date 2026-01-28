@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración de Usuarios - ArchiveSpace</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Estilos específicos para esta página */
+        .dropdown-fixed {
+            z-index: 1060 !important;
+        }
+        .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        .modal {
+            z-index: 1060;
+        }
+        .modal-backdrop {
+            z-index: 1055;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="dashboard.html">
+                <i class="bi bi-archive"></i> ArchiveSpace
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="adminNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="admin-usuarios.html">
+                            <i class="bi bi-people"></i> Usuarios
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="adminLogoutBtn">
+                            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <main class="col-md-12">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="bi bi-people"></i> Administración de Usuarios
+                    </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="bi bi-person-plus"></i> Nuevo Usuario
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="refreshUsersData()">
+                            <i class="bi bi-arrow-clockwise"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Management Tabs -->
+                <ul class="nav nav-tabs mb-4" id="userManagementTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#localUsers">
+                            <i class="bi bi-person"></i> Usuarios Locales
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#ldapConfig">
+                            <i class="bi bi-server"></i> Configuración LDAP
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#rolesPerms">
+                            <i class="bi bi-shield-check"></i> Roles y Permisos
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="userManagementContent">
+                    <!-- Local Users Tab -->
+                    <div class="tab-pane fade show active" id="localUsers">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="usersTable">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Usuario</th>
+                                                <th>Nombre Completo</th>
+                                                <th>Email</th>
+                                                <th>Rol</th>
+                                                <th>Repositorio</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="usersTableBody">
+                                            <!-- Users will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LDAP Configuration Tab -->
+                    <div class="tab-pane fade" id="ldapConfig">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> Configuración LDAP para integración con directorios activos.
+                                </div>
+                                <form id="ldapConfigForm">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Servidor LDAP</label>
+                                                <input type="text" class="form-control" id="ldapServer"
+                                                       placeholder="ldap://servidor:389">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">DN Base</label>
+                                                <input type="text" class="form-control" id="ldapBaseDN"
+                                                       placeholder="dc=example,dc=com">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Usuario Administrador</label>
+                                                <input type="text" class="form-control" id="ldapAdminUser"
+                                                       placeholder="cn=admin,dc=example,dc=com">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Contraseña</label>
+                                                <input type="password" class="form-control" id="ldapAdminPassword">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="enableLDAP">
+                                            <label class="form-check-label" for="enableLDAP">
+                                                Habilitar autenticación LDAP
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <button type="button" class="btn btn-secondary" onclick="testLDAPConnection()">
+                                            <i class="bi bi-plug"></i> Probar Conexión
+                                        </button>
+                                        <button type="button" class="btn btn-primary" id="saveLdapConfigBtn">
+                                            <i class="bi bi-save"></i> Guardar Configuración
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roles and Permissions Tab -->
+                    <div class="tab-pane fade" id="rolesPerms">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Roles del Sistema</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="list-group" id="rolesList">
+                                            <!-- Roles will be loaded here -->
+                                        </div>
+                                        <button class="btn btn-outline-primary mt-3 w-100" 
+                                                data-bs-toggle="modal" data-bs-target="#addRoleModal">
+                                            <i class="bi bi-plus-circle"></i> Nuevo Rol
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Permisos del Rol: <span id="selectedRole">Seleccione un rol</span></h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="permissionsContainer">
+                                            <div class="alert alert-info">
+                                                <i class="bi bi-info-circle"></i> Seleccione un rol de la lista para ver y editar sus permisos.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addUserModalLabel">Nuevo Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm" autocomplete="off">
+                        <div class="mb-3">
+                            <label for="newUsername" class="form-label">Nombre de usuario *</label>
+                            <input type="text" class="form-control" id="newUsername" required>
+                            <div class="form-text">Solo letras, números y guiones bajos</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Contraseña *</label>
+                            <input type="password" class="form-control" id="newPassword" required minlength="6">
+                            <div class="form-text">Mínimo 6 caracteres</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirmar contraseña *</label>
+                            <input type="password" class="form-control" id="confirmPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label">Nombre completo</label>
+                            <input type="text" class="form-control" id="fullName">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="userRoleSelect" class="form-label">Rol *</label>
+                                    <select class="form-select dropdown-fixed" id="userRoleSelect" required>
+                                        <option value="">Seleccionar rol...</option>
+                                        <!-- Roles will be populated -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="userRepoSelect" class="form-label">Repositorio *</label>
+                                    <select class="form-select dropdown-fixed" id="userRepoSelect" required>
+                                        <option value="">Seleccionar repositorio...</option>
+                                        <!-- Repositories will be populated -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="userActive" checked>
+                            <label class="form-check-label" for="userActive">Usuario activo</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveUserBtn">
+                        <i class="bi bi-save"></i> Guardar Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Role Modal -->
+    <div class="modal fade" id="addRoleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addRoleModalLabel">Nuevo Rol</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addRoleForm" autocomplete="off">
+                        <div class="mb-3">
+                            <label for="roleName" class="form-label">Nombre del Rol *</label>
+                            <input type="text" class="form-control" id="roleName" required pattern="[a-zA-Z0-9_]+">
+                            <div class="form-text">Solo letras, números y guiones bajos. Ej: admin, archivista, investigador</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="roleDisplayName" class="form-label">Nombre para mostrar *</label>
+                            <input type="text" class="form-control" id="roleDisplayName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="roleDescription" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="roleDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveRoleBtn">
+                        <i class="bi bi-save"></i> Crear Rol
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- JavaScript Files -->
+    <script src="js/common.js"></script>
+    <script src="js/users.js"></script>
+    
+    <!-- Inline JavaScript para inicialización -->
+    <script>
+        // Función global para refrescar datos
+        window.refreshUsersData = function() {
+            console.log('Refreshing users data...');
+            if (typeof loadUsersTable === 'function') {
+                loadUsersTable();
+                showToast('Datos actualizados', 'La lista de usuarios ha sido refrescada', 'success');
+            }
+        };
+        
+        // Función para probar conexión LDAP
+        window.testLDAPConnection = function() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Prueba de conexión',
+                text: 'Esta función simula una prueba de conexión LDAP.',
+                showConfirmButton: true
+            });
+        };
+        
+        // Inicializar cuando el documento esté listo
+        $(document).ready(function() {
+            console.log('Document ready - Admin Users Page');
+            
+            // Prevenir comportamiento por defecto de formularios
+            $('form').on('submit', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Verificar autenticación
+            if (!checkAuthentication()) {
+                console.log('Not authenticated, redirecting...');
+                return;
+            }
+            
+            // Verificar que el usuario sea admin
+            const currentUser = getCurrentUser();
+            if (!currentUser || currentUser.role !== 'admin') {
+                console.log('User is not admin, redirecting...');
+                showToast('Acceso denegado', 'Solo administradores pueden acceder a esta página', 'danger');
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+                return;
+            }
+            
+            console.log('User authenticated as admin:', currentUser.username);
+            
+            // Inicializar la página
+            initializeAdminPage();
+        });
+        
+        function initializeAdminPage() {
+            console.log('Initializing admin page...');
+            
+            // Cargar datos iniciales
+            setTimeout(() => {
+                if (typeof loadUsersTable === 'function') {
+                    loadUsersTable();
+                }
+                
+                if (typeof loadRolesForDropdown === 'function') {
+                    loadRolesForDropdown();
+                }
+                
+                if (typeof loadRepositoriesForDropdown === 'function') {
+                    loadRepositoriesForDropdown();
+                }
+                
+                if (typeof loadRolesList === 'function') {
+                    loadRolesList();
+                }
+                
+                if (typeof loadLDAPConfig === 'function') {
+                    loadLDAPConfig();
+                }
+                
+                console.log('Admin page initialized');
+            }, 100);
+            
+            // Configurar evento para mostrar modal de usuario
+            $('#addUserModal').on('shown.bs.modal', function() {
+                console.log('User modal shown');
+                // Forzar carga de dropdowns si no se cargaron
+                if ($('#userRoleSelect option').length <= 1) {
+                    loadRolesForDropdown();
+                }
+                if ($('#userRepoSelect option').length <= 1) {
+                    loadRepositoriesForDropdown();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
