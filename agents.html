@@ -11,6 +11,25 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <style>
+        .agent-badge {
+            font-size: 0.8em;
+            padding: 0.25em 0.6em;
+        }
+        .badge-person { background-color: #0d6efd; }
+        .badge-family { background-color: #198754; }
+        .badge-corporate { background-color: #6f42c1; }
+        .badge-software { background-color: #fd7e14; }
+        .parallel-name-item {
+            margin-bottom: 5px;
+        }
+        .relationship-item {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
     <!-- Navbar -->
@@ -86,11 +105,10 @@
                                         <th>Fechas</th>
                                         <th>ID de Autoridad</th>
                                         <th>Recursos</th>
-                                        <th>Accesiones</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="agentsTableBody">
                                     <!-- Agents will be loaded here -->
                                 </tbody>
                             </table>
@@ -147,43 +165,31 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Fechas (Ej: 1880-1955)</label>
-                                    <input type="text" class="form-control" id="agentDates">
+                                    <input type="text" class="form-control" id="agentDates" placeholder="1880-1955">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">ID de Autoridad (VIAF, LCNAF, etc.)</label>
-                                    <input type="text" class="form-control" id="agentAuthorityId">
+                                    <input type="text" class="form-control" id="agentAuthorityId" placeholder="VIAF-123456">
                                 </div>
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Biografía / Historia Institucional</label>
-                            <textarea class="form-control" id="agentBiography" rows="4"></textarea>
+                            <textarea class="form-control" id="agentBiography" rows="4" placeholder="Descripción del agente..."></textarea>
                         </div>
 
                         <!-- Parallel Names -->
                         <div class="mb-3">
                             <label class="form-label">Nombres Paralelos</label>
                             <div id="parallelNamesContainer">
-                                <div class="input-group mb-2">
-                                    <input type="text" class="form-control" placeholder="Nombre alternativo">
-                                    <button class="btn btn-outline-danger" type="button" onclick="removeParallelName(this)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
+                                <!-- Names will be added here -->
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addParallelName()">
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addParallelName()">
                                 <i class="bi bi-plus"></i> Agregar nombre paralelo
                             </button>
-                        </div>
-
-                        <!-- Sources -->
-                        <div class="mb-3">
-                            <label class="form-label">Fuentes de Información</label>
-                            <textarea class="form-control" id="agentSources" rows="2" 
-                                      placeholder="Fuentes consultadas para la información del agente"></textarea>
                         </div>
 
                         <!-- Functions -->
@@ -216,9 +222,506 @@
     <!-- DataTables -->
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-    <!-- Agents JS -->
-    <script src="js/agents.js"></script>
+    <!-- Common JS -->
     <script src="js/common.js"></script>
-    <script src="js/sprint2-common.js"></script>
+    
+    <!-- Inline JavaScript para agentes -->
+    <script>
+        // Variable global para DataTable
+        let agentsDataTable = null;
+        
+        $(document).ready(function() {
+            console.log('Agents page loading...');
+            
+            // Verificar autenticación
+            if (!checkAuthentication()) {
+                return;
+            }
+            
+            // Cargar usuario actual
+            const user = getCurrentUser();
+            if (user && user.username) {
+                $('#currentUser').text(user.username);
+            }
+            
+            // Inicializar datos de agentes
+            initializeAgentsData();
+            
+            // Cargar tabla
+            loadAgentsTable();
+            
+            // Cargar relaciones
+            loadAgentRelationships();
+            
+            // Configurar eventos
+            setupAgentsEvents();
+        });
+        
+        // Inicializar datos de agentes si no existen
+        function initializeAgentsData() {
+            let existingAgents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            
+            if (existingAgents.length === 0) {
+                console.log('Creating initial sample agents...');
+                
+                const sampleAgents = [
+                    {
+                        id: 1,
+                        name: 'Familia Rodríguez',
+                        type: 'family',
+                        dates: '1800-1950',
+                        authorityId: null,
+                        biography: 'Familia prominente de la región durante los siglos XIX y XX',
+                        parallelNames: ['Rodríguez Family', 'Familia Rodríguez Pérez'],
+                        functions: ['creator', 'subject'],
+                        resources: [1, 3],
+                        created: new Date().toISOString(),
+                        createdBy: 1
+                    },
+                    {
+                        id: 2,
+                        name: 'Empresa Comercial S.A.',
+                        type: 'corporate',
+                        dates: '1890-1940',
+                        authorityId: null,
+                        biography: 'Empresa dedicada al comercio de productos agrícolas',
+                        parallelNames: ['Comercial S.A.', 'Empresa Comercial'],
+                        functions: ['creator'],
+                        resources: [2],
+                        created: new Date().toISOString(),
+                        createdBy: 1
+                    },
+                    {
+                        id: 3,
+                        name: 'Juan Pérez',
+                        type: 'person',
+                        dates: '1875-1955',
+                        authorityId: 'VIAF-987654321',
+                        biography: 'Comerciante y figura pública local',
+                        parallelNames: ['Pérez, Juan', 'Juan P.'],
+                        functions: ['creator', 'donor'],
+                        resources: [2],
+                        created: new Date().toISOString(),
+                        createdBy: 2
+                    },
+                    {
+                        id: 4,
+                        name: 'Archivo Histórico Nacional',
+                        type: 'corporate',
+                        dates: '1900-',
+                        authorityId: 'VIAF-123456789',
+                        biography: 'Institución encargada de preservar el patrimonio documental nacional',
+                        parallelNames: ['AHN', 'National Historical Archive'],
+                        functions: ['curator', 'processor'],
+                        resources: [],
+                        created: new Date().toISOString(),
+                        createdBy: 1
+                    }
+                ];
+                
+                localStorage.setItem('archiveSpaceAgents', JSON.stringify(sampleAgents));
+                console.log('Sample agents created:', sampleAgents.length);
+            } else {
+                console.log('Agents already exist:', existingAgents.length);
+            }
+        }
+        
+        // Cargar tabla de agentes
+        function loadAgentsTable() {
+            const agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            const tbody = $('#agentsTableBody');
+            
+            // Limpiar tabla
+            tbody.empty();
+            
+            if (agents.length === 0) {
+                tbody.append(`
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-people"></i> No hay agentes registrados
+                        </td>
+                    </tr>
+                `);
+                
+                // Destruir DataTable si existe
+                if ($.fn.DataTable.isDataTable('#agentsTable')) {
+                    if (agentsDataTable) {
+                        agentsDataTable.destroy();
+                        agentsDataTable = null;
+                    }
+                }
+                
+                return;
+            }
+            
+            // Llenar tabla con datos
+            agents.forEach(agent => {
+                const row = `
+                    <tr data-agent-id="${agent.id}">
+                        <td>${agent.id}</td>
+                        <td><strong>${agent.name}</strong></td>
+                        <td>${getAgentTypeBadge(agent.type)}</td>
+                        <td>${agent.dates || 'N/A'}</td>
+                        <td><code>${agent.authorityId || 'N/A'}</code></td>
+                        <td><span class="badge bg-primary">${agent.resources ? agent.resources.length : 0}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewAgent(${agent.id})">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editAgent(${agent.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteAgent(${agent.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+            
+            // Inicializar o re-inicializar DataTable
+            initializeAgentsDataTable();
+        }
+        
+        // Inicializar DataTable
+        function initializeAgentsDataTable() {
+            // Destruir DataTable existente
+            if ($.fn.DataTable.isDataTable('#agentsTable')) {
+                if (agentsDataTable) {
+                    agentsDataTable.destroy();
+                    agentsDataTable = null;
+                }
+            }
+            
+            // Crear nueva DataTable
+            agentsDataTable = $('#agentsTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+                },
+                pageLength: 10,
+                responsive: true,
+                order: [[0, 'desc']],
+                columnDefs: [
+                    { orderable: false, targets: [6] } // Columna de acciones no ordenable
+                ]
+            });
+        }
+        
+        // Obtener badge para tipo de agente
+        function getAgentTypeBadge(type) {
+            const badges = {
+                'person': '<span class="badge agent-badge badge-person">Persona</span>',
+                'family': '<span class="badge agent-badge badge-family">Familia</span>',
+                'corporate': '<span class="badge agent-badge badge-corporate">Entidad</span>',
+                'software': '<span class="badge agent-badge badge-software">Software</span>'
+            };
+            return badges[type] || '<span class="badge bg-secondary">' + type + '</span>';
+        }
+        
+        // Cargar relaciones entre agentes
+        function loadAgentRelationships() {
+            const agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            const container = $('#agentRelationships');
+            
+            container.empty();
+            
+            if (agents.length < 2) {
+                container.html(`
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Se necesitan al menos 2 agentes para mostrar relaciones.
+                    </div>
+                `);
+                return;
+            }
+            
+            let html = '<div class="row">';
+            
+            // Mostrar algunas relaciones de ejemplo
+            agents.forEach(agent => {
+                if (agent.resources && agent.resources.length > 0) {
+                    html += `
+                        <div class="col-md-6">
+                            <div class="relationship-item">
+                                <strong>${agent.name}</strong>
+                                <div class="small text-muted">
+                                    <i class="bi bi-folder"></i> Relacionado con ${agent.resources.length} recurso(s)
+                                </div>
+                                ${agent.functions && agent.functions.length > 0 ? 
+                                    `<div class="mt-2">
+                                        <small>Funciones: ${agent.functions.map(f => getFunctionDisplay(f)).join(', ')}</small>
+                                    </div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += '</div>';
+            container.html(html);
+        }
+        
+        // Obtener nombre de función
+        function getFunctionDisplay(func) {
+            const functions = {
+                'creator': 'Creador',
+                'collector': 'Coleccionista',
+                'donor': 'Donante',
+                'subject': 'Sujeto',
+                'processor': 'Procesador',
+                'curator': 'Curador'
+            };
+            return functions[func] || func;
+        }
+        
+        // Configurar eventos
+        function setupAgentsEvents() {
+            // Botón guardar agente
+            $('#saveAgentBtn').off('click').on('click', saveAgent);
+            
+            // Limpiar formulario al abrir modal
+            $('#addAgentModal').on('show.bs.modal', function() {
+                $('#addAgentForm')[0].reset();
+                $('#parallelNamesContainer').empty();
+                // Agregar un campo inicial para nombres paralelos
+                addParallelName();
+            });
+        }
+        
+        // Agregar campo para nombre paralelo
+        function addParallelName() {
+            const container = $('#parallelNamesContainer');
+            const index = container.children().length;
+            
+            const inputGroup = $(`
+                <div class="input-group mb-2 parallel-name-item">
+                    <input type="text" class="form-control" placeholder="Nombre paralelo o variante">
+                    <button class="btn btn-outline-danger" type="button" onclick="removeParallelName(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `);
+            
+            container.append(inputGroup);
+        }
+        
+        // Eliminar campo de nombre paralelo
+        function removeParallelName(button) {
+            $(button).closest('.parallel-name-item').remove();
+        }
+        
+        // Guardar nuevo agente
+        function saveAgent() {
+            const type = $('#agentType').val();
+            const name = $('#agentName').val().trim();
+            const dates = $('#agentDates').val().trim();
+            const authorityId = $('#agentAuthorityId').val().trim();
+            const biography = $('#agentBiography').val().trim();
+            const functions = Array.from($('#agentFunctions').val() || []);
+            
+            // Validación
+            if (!type) {
+                showToast('Error', 'El tipo de agente es obligatorio', 'danger');
+                return;
+            }
+            
+            if (!name) {
+                showToast('Error', 'El nombre es obligatorio', 'danger');
+                return;
+            }
+            
+            // Validar formato de fechas (opcional)
+            if (dates && !/^(\d{4}(-\d{4})?|)$/.test(dates) && !/^(\d{4}-)$/.test(dates)) {
+                showToast('Error', 'Formato de fechas inválido. Use: 1880-1955 o 1880-', 'warning');
+                return;
+            }
+            
+            // Obtener agentes actuales
+            let agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            
+            // Verificar si ya existe el agente
+            const existingAgent = agents.find(a => a.name.toLowerCase() === name.toLowerCase());
+            if (existingAgent) {
+                showToast('Error', 'Ya existe un agente con este nombre', 'warning');
+                return;
+            }
+            
+            // Obtener nombres paralelos
+            const parallelNames = [];
+            $('#parallelNamesContainer .form-control').each(function() {
+                const name = $(this).val().trim();
+                if (name) {
+                    parallelNames.push(name);
+                }
+            });
+            
+            // Generar nuevo ID
+            const newId = agents.length > 0 ? Math.max(...agents.map(a => a.id)) + 1 : 1;
+            
+            // Crear nuevo agente
+            const newAgent = {
+                id: newId,
+                type,
+                name,
+                dates: dates || null,
+                authorityId: authorityId || null,
+                biography: biography || null,
+                parallelNames: parallelNames.length > 0 ? parallelNames : null,
+                functions: functions.length > 0 ? functions : null,
+                resources: [],
+                created: new Date().toISOString(),
+                createdBy: getCurrentUser()?.id || null
+            };
+            
+            // Agregar a la lista
+            agents.push(newAgent);
+            
+            // Guardar en localStorage
+            localStorage.setItem('archiveSpaceAgents', JSON.stringify(agents));
+            
+            // Mostrar éxito
+            showToast('Éxito', `Agente "${name}" creado correctamente`, 'success');
+            
+            // Cerrar modal
+            $('#addAgentModal').modal('hide');
+            
+            // Recargar datos
+            setTimeout(() => {
+                loadAgentsTable();
+                loadAgentRelationships();
+            }, 300);
+        }
+        
+        // Ver agente
+        function viewAgent(id) {
+            const agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            const agent = agents.find(a => a.id === id);
+            
+            if (!agent) {
+                showToast('Error', 'Agente no encontrado', 'danger');
+                return;
+            }
+            
+            let details = `=== AGENTE EAC-CPF ===\n\n`;
+            details += `ID: ${agent.id}\n`;
+            details += `Nombre: ${agent.name}\n`;
+            details += `Tipo: ${agent.type}\n`;
+            details += `Fechas: ${agent.dates || 'N/A'}\n`;
+            details += `ID Autoridad: ${agent.authorityId || 'N/A'}\n`;
+            
+            if (agent.parallelNames && agent.parallelNames.length > 0) {
+                details += `Nombres paralelos: ${agent.parallelNames.join(', ')}\n`;
+            }
+            
+            if (agent.functions && agent.functions.length > 0) {
+                details += `Funciones: ${agent.functions.map(f => getFunctionDisplay(f)).join(', ')}\n`;
+            }
+            
+            if (agent.biography) {
+                details += `\nBiografía:\n${agent.biography}\n`;
+            }
+            
+            details += `\nRecursos relacionados: ${agent.resources ? agent.resources.length : 0}`;
+            
+            alert(details);
+        }
+        
+        // Editar agente
+        function editAgent(id) {
+            showToast('Información', 'La edición de agentes estará disponible próximamente', 'info');
+        }
+        
+        // Eliminar agente
+        function deleteAgent(id) {
+            if (!confirm('¿Está seguro de eliminar este agente? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            // Obtener agentes actuales
+            let agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            
+            // Filtrar para eliminar solo este agente
+            const originalCount = agents.length;
+            agents = agents.filter(agent => agent.id !== id);
+            
+            const deletedCount = originalCount - agents.length;
+            
+            if (deletedCount === 0) {
+                showToast('Error', 'No se encontró el agente a eliminar', 'danger');
+                return;
+            }
+            
+            // Guardar cambios
+            localStorage.setItem('archiveSpaceAgents', JSON.stringify(agents));
+            
+            // Mostrar éxito
+            showToast('Éxito', 'Agente eliminado correctamente', 'success');
+            
+            // Recargar datos
+            loadAgentsTable();
+            loadAgentRelationships();
+        }
+        
+        // Exportar agentes
+        function exportAgents(format) {
+            const agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            
+            if (agents.length === 0) {
+                showToast('Error', 'No hay agentes para exportar', 'warning');
+                return;
+            }
+            
+            showToast('Exportando', `Exportando ${agents.length} agentes en formato ${format.toUpperCase()}`, 'info');
+            
+            // Simular exportación
+            setTimeout(() => {
+                showToast('Éxito', `Exportación EAC-CPF completada`, 'success');
+            }, 1500);
+        }
+        
+        // Función para mostrar toast
+        function showToast(title, message, type = 'info') {
+            // Crear toast container si no existe
+            let toastContainer = $('.toast-container');
+            if (toastContainer.length === 0) {
+                toastContainer = $('<div>').addClass('toast-container position-fixed top-0 end-0 p-3');
+                $('body').append(toastContainer);
+            }
+            
+            // Definir colores Bootstrap
+            const colorClasses = {
+                'success': 'bg-success',
+                'danger': 'bg-danger',
+                'warning': 'bg-warning',
+                'info': 'bg-info'
+            };
+            
+            // Crear toast
+            const toastId = 'toast-' + Date.now();
+            const toast = $(`
+                <div id="${toastId}" class="toast align-items-center text-white ${colorClasses[type] || 'bg-primary'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <strong>${title}</strong><br>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `);
+            
+            // Añadir al contenedor
+            toastContainer.append(toast);
+            
+            // Inicializar y mostrar toast
+            const bsToast = new bootstrap.Toast(toast[0], { delay: 3000 });
+            bsToast.show();
+            
+            // Eliminar después de ocultar
+            toast.on('hidden.bs.toast', function() {
+                $(this).remove();
+            });
+        }
+    </script>
 </body>
 </html>
