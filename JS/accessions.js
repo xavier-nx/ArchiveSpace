@@ -19,6 +19,9 @@ $(document).ready(function() {
         return;
     }
     
+    // Initialize accessions storage
+    initializeAccessionsStorage();
+    
     // Load accessions table
     loadAccessionsTable();
     
@@ -39,6 +42,262 @@ $(document).ready(function() {
 });
 
 /**
+ * Initialize accessions storage with sample data if empty
+ */
+function initializeAccessionsStorage() {
+    if (!localStorage.getItem('archiveSpaceAccessions')) {
+        console.log('Initializing accessions storage...');
+        
+        const sampleAccessions = [
+            {
+                id: 1,
+                accessionNumber: 'ACC-2024-001',
+                title: 'Documentación administrativa municipal 1950-1970',
+                contentDescription: 'Libros de actas, correspondencia oficial y documentos administrativos del municipio',
+                provenance: 'Archivo Municipal',
+                dateReceived: '2024-01-15',
+                dateProcessed: '2024-01-20',
+                resourceId: 1,
+                repositoryId: 1,
+                disposition: 'processed',
+                restrictions: 'Acceso restringido por 25 años',
+                agents: [2],
+                subjects: [3, 5],
+                created: '2024-01-15T10:00:00Z',
+                createdBy: 2,
+                updatedAt: null
+            },
+            {
+                id: 2,
+                accessionNumber: 'ACC-2024-002',
+                title: 'Fotografías de eventos culturales',
+                contentDescription: 'Colección de 150 fotografías de eventos culturales y festividades locales',
+                provenance: 'Donación: Familia López',
+                dateReceived: '2024-02-10',
+                dateProcessed: null,
+                resourceId: 3,
+                repositoryId: 1,
+                disposition: 'processing',
+                restrictions: 'Sin restricciones',
+                agents: [1],
+                subjects: [4, 6],
+                created: '2024-02-10T14:30:00Z',
+                createdBy: 2,
+                updatedAt: null
+            },
+            {
+                id: 3,
+                accessionNumber: 'ACC-2024-003',
+                title: 'Correspondencia comercial siglo XIX',
+                contentDescription: 'Cartas y documentos comerciales de empresas locales del siglo XIX',
+                provenance: 'Archivo Histórico Provincial',
+                dateReceived: '2024-03-05',
+                dateProcessed: null,
+                resourceId: null,
+                repositoryId: 1,
+                disposition: 'pending',
+                restrictions: 'Frágil, manipulación cuidadosa',
+                agents: [3],
+                subjects: [3, 7],
+                created: '2024-03-05T09:15:00Z',
+                createdBy: 2,
+                updatedAt: null
+            }
+        ];
+        
+        localStorage.setItem('archiveSpaceAccessions', JSON.stringify(sampleAccessions));
+        console.log('Sample accessions created');
+    }
+    
+    // Initialize related data if not exists
+    if (!localStorage.getItem('archiveSpaceAgents')) {
+        const sampleAgents = [
+            { id: 1, name: 'Familia Rodríguez', type: 'familia', dates: '1850-1950' },
+            { id: 2, name: 'Municipalidad Local', type: 'corporación', dates: '1900-presente' },
+            { id: 3, name: 'Comerciantes Asociados', type: 'corporación', dates: '1800-1900' }
+        ];
+        localStorage.setItem('archiveSpaceAgents', JSON.stringify(sampleAgents));
+    }
+    
+    if (!localStorage.getItem('archiveSpaceSubjects')) {
+        const sampleSubjects = [
+            { id: 1, name: 'Historia familiar', term: 'Historia familiar' },
+            { id: 2, name: 'Genealogía', term: 'Genealogía' },
+            { id: 3, name: 'Administración pública', term: 'Administración pública' },
+            { id: 4, name: 'Cultura', term: 'Cultura' },
+            { id: 5, name: 'Política local', term: 'Política local' },
+            { id: 6, name: 'Fotografía', term: 'Fotografía' },
+            { id: 7, name: 'Comercio', term: 'Comercio' }
+        ];
+        localStorage.setItem('archiveSpaceSubjects', JSON.stringify(sampleSubjects));
+    }
+}
+
+/**
+ * Get all accessions
+ */
+function getAllAccessions() {
+    return JSON.parse(localStorage.getItem('archiveSpaceAccessions')) || [];
+}
+
+/**
+ * Get accession by ID
+ */
+function getAccessionById(id) {
+    const accessions = getAllAccessions();
+    return accessions.find(a => a.id === id);
+}
+
+/**
+ * Get all agents
+ */
+function getAllAgents() {
+    return JSON.parse(localStorage.getItem('archiveSpaceAgents')) || [];
+}
+
+/**
+ * Get agent by ID
+ */
+function getAgentById(id) {
+    const agents = getAllAgents();
+    return agents.find(a => a.id === id);
+}
+
+/**
+ * Get all subjects
+ */
+function getAllSubjects() {
+    return JSON.parse(localStorage.getItem('archiveSpaceSubjects')) || [];
+}
+
+/**
+ * Get subject by ID
+ */
+function getSubjectById(id) {
+    const subjects = getAllSubjects();
+    return subjects.find(s => s.id === id);
+}
+
+/**
+ * Get all resources
+ */
+function getAllResources() {
+    return JSON.parse(localStorage.getItem('archiveSpaceResources')) || [];
+}
+
+/**
+ * Get resource by ID
+ */
+function getResourceById(id) {
+    const resources = getAllResources();
+    return resources.find(r => r.id === id);
+}
+
+/**
+ * Add new accession
+ */
+function addAccession(accessionData) {
+    const accessions = getAllAccessions();
+    const currentUser = getCurrentUser();
+    
+    // Generate new ID
+    const newId = accessions.length > 0 ? Math.max(...accessions.map(a => a.id)) + 1 : 1;
+    
+    const newAccession = {
+        id: newId,
+        accessionNumber: accessionData.accessionNumber,
+        title: accessionData.title,
+        contentDescription: accessionData.contentDescription || '',
+        provenance: accessionData.provenance,
+        dateReceived: accessionData.dateReceived || new Date().toISOString().split('T')[0],
+        dateProcessed: null,
+        resourceId: accessionData.resourceId || null,
+        repositoryId: currentUser?.repositoryId || 1,
+        disposition: accessionData.disposition || 'pending',
+        restrictions: accessionData.restrictions || 'Ninguna',
+        agents: accessionData.agents || [],
+        subjects: accessionData.subjects || [],
+        created: new Date().toISOString(),
+        createdBy: currentUser?.id || null,
+        updatedAt: null
+    };
+    
+    accessions.push(newAccession);
+    localStorage.setItem('archiveSpaceAccessions', JSON.stringify(accessions));
+    
+    // Log activity
+    if (currentUser) {
+        logActivity(currentUser.id, 'accession.create', 
+            `Creó la accesión "${accessionData.accessionNumber}"`);
+    }
+    
+    return { success: true, accession: newAccession };
+}
+
+/**
+ * Update existing accession
+ */
+function updateAccession(accessionId, accessionData) {
+    const accessions = getAllAccessions();
+    const index = accessions.findIndex(a => a.id === accessionId);
+    
+    if (index === -1) {
+        return { success: false, message: 'Accesión no encontrada' };
+    }
+    
+    const currentUser = getCurrentUser();
+    
+    // Update accession
+    accessions[index] = {
+        ...accessions[index],
+        title: accessionData.title || accessions[index].title,
+        contentDescription: accessionData.contentDescription || accessions[index].contentDescription,
+        provenance: accessionData.provenance || accessions[index].provenance,
+        dateReceived: accessionData.dateReceived || accessions[index].dateReceived,
+        resourceId: accessionData.resourceId !== undefined ? accessionData.resourceId : accessions[index].resourceId,
+        disposition: accessionData.disposition || accessions[index].disposition,
+        restrictions: accessionData.restrictions || accessions[index].restrictions,
+        agents: accessionData.agents || accessions[index].agents,
+        subjects: accessionData.subjects || accessions[index].subjects,
+        updatedAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('archiveSpaceAccessions', JSON.stringify(accessions));
+    
+    // Log activity
+    if (currentUser) {
+        logActivity(currentUser.id, 'accession.update', 
+            `Actualizó la accesión "${accessions[index].accessionNumber}"`);
+    }
+    
+    return { success: true, accession: accessions[index] };
+}
+
+/**
+ * Delete accession
+ */
+function deleteAccession(accessionId) {
+    const accessions = getAllAccessions();
+    const accession = accessions.find(a => a.id === accessionId);
+    
+    if (!accession) {
+        return { success: false, message: 'Accesión no encontrada' };
+    }
+    
+    const filteredAccessions = accessions.filter(a => a.id !== accessionId);
+    localStorage.setItem('archiveSpaceAccessions', JSON.stringify(filteredAccessions));
+    
+    // Log activity
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+        logActivity(currentUser.id, 'accession.delete', 
+            `Eliminó la accesión "${accession.accessionNumber}"`);
+    }
+    
+    return { success: true };
+}
+
+/**
  * Load accessions into table
  */
 function loadAccessionsTable() {
@@ -55,8 +314,10 @@ function loadAccessionsTable() {
     if (filteredAccessions.length === 0) {
         table.append(`
             <tr>
-                <td colspan="8" class="text-center text-muted">
-                    No hay accesiones registradas
+                <td colspan="8" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                    <h5>No hay accesiones registradas</h5>
+                    <p>Cree su primera accesión usando el botón "Nueva Accesión"</p>
                 </td>
             </tr>
         `);
@@ -105,12 +366,14 @@ function loadAccessionsTable() {
     });
     
     // Initialize DataTable
-    if ($.fn.DataTable) {
+    if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#accessionsTable')) {
         $('#accessionsTable').DataTable({
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
             },
-            order: [[0, 'desc']]
+            pageLength: 10,
+            order: [[0, 'desc']],
+            responsive: true
         });
     }
 }
@@ -208,7 +471,7 @@ function loadSubjectsForAccessionDropdown() {
     select.empty();
     
     subjects.forEach(subject => {
-        select.append(`<option value="${subject.id}">${subject.term}</option>`);
+        select.append(`<option value="${subject.id}">${subject.term || subject.name}</option>`);
     });
 }
 
@@ -217,7 +480,7 @@ function loadSubjectsForAccessionDropdown() {
  */
 function setupAccessionsEventListeners() {
     // Save accession button
-    $('#saveAccessionBtn').click(handleSaveAccession);
+    $('#saveAccessionBtn').off('click').on('click', handleSaveAccession);
     
     // View accession buttons (delegated)
     $('#accessionsTable').on('click', '.view-accession', function() {
@@ -236,6 +499,23 @@ function setupAccessionsEventListeners() {
         const accessionId = $(this).closest('tr').data('accession-id');
         processAccession(accessionId);
     });
+    
+    // Generate new accession number when modal opens
+    $('#addAccessionModal').on('show.bs.modal', function() {
+        generateAccessionNumber();
+    });
+}
+
+/**
+ * Generate accession number
+ */
+function generateAccessionNumber() {
+    const year = new Date().getFullYear();
+    const accessions = getAllAccessions();
+    const yearAccessions = accessions.filter(a => a.accessionNumber.includes(`-${year}-`));
+    const nextNumber = yearAccessions.length + 1;
+    const accessionNumber = `ACC-${year}-${nextNumber.toString().padStart(3, '0')}`;
+    $('#accessionNumber').val(accessionNumber);
 }
 
 /**
@@ -264,12 +544,8 @@ function handleSaveAccession() {
         return;
     }
     
-    // Generate accession number
-    const accessions = getAllAccessions();
-    const year = new Date().getFullYear();
-    const yearAccessions = accessions.filter(a => a.accessionNumber.includes(`-${year}-`));
-    const nextNumber = yearAccessions.length + 1;
-    const accessionNumber = `ACC-${year}-${nextNumber.toString().padStart(3, '0')}`;
+    // Get accession number from form
+    const accessionNumber = $('#accessionNumber').val();
     
     // Prepare accession data
     const accessionData = {
@@ -277,7 +553,7 @@ function handleSaveAccession() {
         title,
         contentDescription,
         provenance,
-        dateReceived,
+        dateReceived: dateReceived || new Date().toISOString().split('T')[0],
         resourceId: resourceId ? parseInt(resourceId) : null,
         disposition,
         restrictions,
@@ -295,12 +571,12 @@ function handleSaveAccession() {
         $('#addAccessionModal').modal('hide');
         $('#addAccessionForm')[0].reset();
         
-        // Update accession number for next
-        $('#accessionNumber').val(`ACC-${year}-${(nextNumber + 1).toString().padStart(3, '0')}`);
-        
         // Refresh tables and statistics
-        loadAccessionsTable();
-        loadAccessionsStatistics();
+        setTimeout(() => {
+            loadAccessionsTable();
+            loadAccessionsStatistics();
+            loadResourcesForAccessionDropdown();
+        }, 500);
     } else {
         showToast('Error', result.message, 'danger');
     }
@@ -360,7 +636,7 @@ function viewAccessionDetail(accessionId) {
                     ${agents.map(agent => `
                         <div class="list-group-item">
                             <strong>${agent.name}</strong> (${agent.type})<br>
-                            <small>${agent.dates}</small>
+                            <small>${agent.dates || ''}</small>
                         </div>
                     `).join('')}
                 </div>
@@ -374,7 +650,7 @@ function viewAccessionDetail(accessionId) {
                 <h5>Sujetos / Temas</h5>
                 <div class="d-flex flex-wrap gap-2">
                     ${subjects.map(subject => `
-                        <span class="badge bg-secondary">${subject.term}</span>
+                        <span class="badge bg-secondary">${subject.term || subject.name}</span>
                     `).join('')}
                 </div>
             </div>
@@ -408,7 +684,7 @@ function editAccession(accessionId) {
     $('#accessionNumber').val(accession.accessionNumber);
     $('#accessionDateReceived').val(accession.dateReceived);
     $('#accessionTitle').val(accession.title);
-    $('#accessionContentDescription').val(accession.contentDescription);
+    $('#accessionContentDescription').val(accession.contentDescription || '');
     $('#accessionProvenance').val(accession.provenance);
     $('#accessionResource').val(accession.resourceId || '');
     $('#accessionDisposition').val(accession.disposition);
@@ -428,19 +704,21 @@ function editAccession(accessionId) {
     
     // Reset modal when hidden
     $('#addAccessionModal').on('hidden.bs.modal', function() {
-        $('#addAccessionModal .modal-title').text('Nueva Accesión');
-        $('#saveAccessionBtn').text('Guardar Accesión');
-        $('#saveAccessionBtn').removeData('accession-id');
-        
-        // Reset form with new accession number
-        const year = new Date().getFullYear();
-        const accessions = getAllAccessions();
-        const yearAccessions = accessions.filter(a => a.accessionNumber.includes(`-${year}-`));
-        const nextNumber = yearAccessions.length + 1;
-        $('#accessionNumber').val(`ACC-${year}-${nextNumber.toString().padStart(3, '0')}`);
-        
-        $('#addAccessionForm')[0].reset();
+        resetAccessionForm();
     });
+}
+
+/**
+ * Reset accession form
+ */
+function resetAccessionForm() {
+    $('#addAccessionModal .modal-title').text('Nueva Accesión');
+    $('#saveAccessionBtn').text('Guardar Accesión');
+    $('#saveAccessionBtn').removeData('accession-id');
+    $('#addAccessionForm')[0].reset();
+    
+    // Generate new accession number
+    generateAccessionNumber();
 }
 
 /**
@@ -463,23 +741,12 @@ function processAccession(accessionId) {
     const dateProcessed = newDisposition === 'processed' ? new Date().toISOString().split('T')[0] : null;
     
     // Update accession
-    const accessions = getAllAccessions();
-    const index = accessions.findIndex(a => a.id === accessionId);
+    const result = updateAccession(accessionId, {
+        disposition: newDisposition,
+        dateProcessed: dateProcessed
+    });
     
-    if (index !== -1) {
-        accessions[index].disposition = newDisposition;
-        accessions[index].dateProcessed = dateProcessed;
-        accessions[index].updatedAt = new Date().toISOString();
-        
-        localStorage.setItem('archiveSpaceAccessions', JSON.stringify(accessions));
-        
-        // Log activity
-        const currentUser = getCurrentUser();
-        if (currentUser) {
-            logActivity(currentUser.id, 'accession.process', 
-                `${newDisposition === 'processing' ? 'Inició procesamiento' : 'Completó procesamiento'} de la accesión ${accession.accessionNumber}`);
-        }
-        
+    if (result.success) {
         showToast('Éxito', `Accesión marcada como ${newDisposition === 'processing' ? 'en proceso' : 'procesada'}`, 'success');
         loadAccessionsTable();
         loadAccessionsStatistics();
@@ -523,6 +790,52 @@ function exportAccessions(format) {
 }
 
 /**
+ * Export data to file
+ */
+function exportData(data, format) {
+    try {
+        let blob, filename, type;
+        
+        if (format === 'xml') {
+            blob = new Blob([data], { type: 'application/xml' });
+            filename = `accesiones-${new Date().toISOString().split('T')[0]}.xml`;
+        } else if (format === 'csv') {
+            // Convert array to CSV
+            if (Array.isArray(data) && data.length > 0) {
+                const headers = Object.keys(data[0]);
+                const csvRows = [
+                    headers.join(','),
+                    ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+                ];
+                blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+                filename = `accesiones-${new Date().toISOString().split('T')[0]}.csv`;
+            } else {
+                return false;
+            }
+        } else {
+            // Default to JSON
+            blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            filename = `accesiones-${new Date().toISOString().split('T')[0]}.json`;
+        }
+        
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        return true;
+    } catch (error) {
+        console.error('Export error:', error);
+        return false;
+    }
+}
+
+/**
  * Convert accessions to MARCXML (simplified)
  */
 function convertAccessionsToMARCXML(accessions) {
@@ -536,17 +849,17 @@ function convertAccessionsToMARCXML(accessions) {
         <leader>-----nz---22-----4500</leader>
         <controlfield tag="001">${accession.id}</controlfield>
         <datafield tag="245" ind1="1" ind2="0">
-            <subfield code="a">${accession.title}</subfield>
+            <subfield code="a">${escapeXML(accession.title)}</subfield>
         </datafield>
         <datafield tag="520" ind1=" " ind2=" ">
-            <subfield code="a">${accession.contentDescription || ''}</subfield>
+            <subfield code="a">${escapeXML(accession.contentDescription || '')}</subfield>
         </datafield>
         <datafield tag="541" ind1=" " ind2=" ">
-            <subfield code="a">${accession.provenance}</subfield>
+            <subfield code="a">${escapeXML(accession.provenance)}</subfield>
             <subfield code="d">${accession.dateReceived}</subfield>
         </datafield>
         <datafield tag="506" ind1=" " ind2=" ">
-            <subfield code="a">${accession.restrictions}</subfield>
+            <subfield code="a">${escapeXML(accession.restrictions)}</subfield>
         </datafield>
     </record>
 `;
@@ -554,6 +867,19 @@ function convertAccessionsToMARCXML(accessions) {
     
     xml += `</collection>`;
     return xml;
+}
+
+/**
+ * Escape XML special characters
+ */
+function escapeXML(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
 }
 
 /**
@@ -591,65 +917,65 @@ function showModal(title, content) {
     });
 }
 
-// Update save button to handle both create and update
-$(document).on('click', '#saveAccessionBtn', function() {
-    const accessionId = $(this).data('accession-id');
-    
-    if (accessionId) {
-        // Update existing accession
-        updateAccessionHandler(accessionId);
+/**
+ * View resource detail (placeholder)
+ */
+function viewResourceDetail(resourceId) {
+    const resource = getResourceById(resourceId);
+    if (resource) {
+        showModal('Detalle de Recurso', `
+            <div class="resource-detail">
+                <h3>${resource.title}</h3>
+                <p><strong>Código:</strong> ${resource.code || 'N/A'}</p>
+                <p><strong>Nivel:</strong> ${resource.level}</p>
+                <p><strong>Descripción:</strong> ${resource.description || 'Sin descripción'}</p>
+            </div>
+        `);
     } else {
-        // Create new accession
-        handleSaveAccession();
+        showToast('Error', 'Recurso no encontrado', 'danger');
     }
-});
+}
 
 /**
- * Handle accession update
+ * Log activity
  */
-function updateAccessionHandler(accessionId) {
-    const title = $('#accessionTitle').val().trim();
-    const contentDescription = $('#accessionContentDescription').val().trim();
-    const provenance = $('#accessionProvenance').val().trim();
-    const dateReceived = $('#accessionDateReceived').val();
-    const resourceId = $('#accessionResource').val() || null;
-    const disposition = $('#accessionDisposition').val();
-    const restrictions = $('#accessionRestrictions').val().trim() || 'Ninguna';
-    const agents = Array.from($('#accessionAgents').val() || []).map(id => parseInt(id));
-    const subjects = Array.from($('#accessionSubjects').val() || []).map(id => parseInt(id));
+function logActivity(userId, action, description) {
+    const activities = JSON.parse(localStorage.getItem('archiveSpaceActivities') || '[]');
     
-    if (!title || !provenance) {
-        showToast('Error', 'El título y la procedencia son requeridos', 'danger');
-        return;
+    const activity = {
+        id: activities.length > 0 ? Math.max(...activities.map(a => a.id)) + 1 : 1,
+        userId,
+        action,
+        description,
+        timestamp: new Date().toISOString(),
+        ipAddress: '127.0.0.1'
+    };
+    
+    activities.push(activity);
+    
+    // Keep only last 100 activities
+    if (activities.length > 100) {
+        activities.shift();
     }
     
-    // Get current accession
-    const accessions = getAllAccessions();
-    const index = accessions.findIndex(a => a.id === accessionId);
-    
-    if (index === -1) {
-        showToast('Error', 'Accesión no encontrada', 'danger');
-        return;
+    localStorage.setItem('archiveSpaceActivities', JSON.stringify(activities));
+}
+
+/**
+ * Format date for display
+ */
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (error) {
+        return dateString;
     }
-    
-    // Update accession
-    accessions[index].title = title;
-    accessions[index].contentDescription = contentDescription;
-    accessions[index].provenance = provenance;
-    accessions[index].dateReceived = dateReceived;
-    accessions[index].resourceId = resourceId ? parseInt(resourceId) : null;
-    accessions[index].disposition = disposition;
-    accessions[index].restrictions = restrictions;
-    accessions[index].agents = agents;
-    accessions[index].subjects = subjects;
-    accessions[index].updatedAt = new Date().toISOString();
-    
-    localStorage.setItem('archiveSpaceAccessions', JSON.stringify(accessions));
-    
-    showToast('Éxito', `Accesión "${title}" actualizada correctamente`, 'success');
-    $('#addAccessionModal').modal('hide');
-    loadAccessionsTable();
-    loadAccessionsStatistics();
 }
 
 // Make functions available globally
