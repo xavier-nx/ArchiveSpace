@@ -101,7 +101,7 @@
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="resourcesTableBody">
                                     <!-- Resources will be loaded here -->
                                 </tbody>
                             </table>
@@ -265,6 +265,324 @@
     <!-- Resources JS -->
     <script src="js/resources.js"></script>
     <script src="js/common.js"></script>
-    <script src="js/sprint2-common.js"></script>
+    
+    <!-- Inline JavaScript corregido -->
+    <script>
+        // Variable global para la DataTable
+        let resourcesDataTable = null;
+        
+        $(document).ready(function() {
+            console.log('Resources page loading...');
+            
+            // Verificar autenticación
+            if (!checkAuthentication()) {
+                return;
+            }
+            
+            // Cargar usuario actual
+            const user = getCurrentUser();
+            if (user && user.username) {
+                $('#currentUser').text(user.username);
+            }
+            
+            // Inicializar la página de recursos
+            initializeResourcesPage();
+        });
+        
+        function initializeResourcesPage() {
+            console.log('Initializing resources page...');
+            
+            // Cargar datos iniciales
+            loadResourcesTable();
+            loadResourceDropdowns();
+            
+            // Configurar eventos
+            setupResourceEvents();
+        }
+        
+        function loadResourcesTable() {
+            console.log('Loading resources table...');
+            
+            // Obtener recursos del localStorage
+            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            const tbody = $('#resourcesTableBody');
+            
+            // Limpiar la tabla
+            tbody.empty();
+            
+            if (resources.length === 0) {
+                // Mostrar mensaje de tabla vacía
+                tbody.append(`
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            <i class="bi bi-folder-x display-6 d-block mb-2"></i>
+                            <h5>No hay recursos archivísticos</h5>
+                            <p>Cree su primer recurso usando el botón "Nuevo Recurso"</p>
+                        </td>
+                    </tr>
+                `);
+                
+                // Destruir DataTable si existe
+                if ($.fn.DataTable.isDataTable('#resourcesTable')) {
+                    resourcesDataTable?.destroy();
+                    $('#resourcesTable').removeClass('dataTable');
+                }
+                
+                return;
+            }
+            
+            // Si ya existe una DataTable, destruirla primero
+            if ($.fn.DataTable.isDataTable('#resourcesTable')) {
+                if (resourcesDataTable) {
+                    resourcesDataTable.destroy();
+                }
+                $('#resourcesTable').removeClass('dataTable');
+            }
+            
+            // Llenar la tabla con datos
+            resources.forEach(resource => {
+                const row = `
+                    <tr>
+                        <td>${resource.id}</td>
+                        <td><strong>${resource.title}</strong></td>
+                        <td><code>${resource.code || 'N/A'}</code></td>
+                        <td>${formatDateRange(resource.dateStart, resource.dateEnd)}</td>
+                        <td><span class="badge bg-info">${resource.level}</span></td>
+                        <td><span class="badge bg-success">${resource.status || 'Activo'}</span></td>
+                        <td>${resource.agents?.join(', ') || 'Ninguno'}</td>
+                        <td>${resource.subjects?.join(', ') || 'Ninguno'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewResource(${resource.id})">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editResource(${resource.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteResource(${resource.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+            
+            // Inicializar DataTable solo una vez
+            try {
+                resourcesDataTable = $('#resourcesTable').DataTable({
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
+                    },
+                    pageLength: 10,
+                    responsive: true,
+                    order: [[1, 'asc']]
+                });
+                
+                console.log('DataTable initialized successfully');
+            } catch (error) {
+                console.error('Error initializing DataTable:', error);
+            }
+        }
+        
+        function loadResourceDropdowns() {
+            console.log('Loading resource dropdowns...');
+            
+            // Cargar agentes
+            const agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            const agentsSelect = $('#resourceAgents');
+            agentsSelect.empty();
+            agents.forEach(agent => {
+                agentsSelect.append(`<option value="${agent.id}">${agent.name}</option>`);
+            });
+            
+            // Cargar sujetos
+            const subjects = JSON.parse(localStorage.getItem('archiveSpaceSubjects') || '[]');
+            const subjectsSelect = $('#resourceSubjects');
+            subjectsSelect.empty();
+            subjects.forEach(subject => {
+                subjectsSelect.append(`<option value="${subject.id}">${subject.name}</option>`);
+            });
+            
+            // Cargar recursos padre
+            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            const parentSelect = $('#resourceParent');
+            parentSelect.find('option').not(':first').remove();
+            resources.forEach(resource => {
+                parentSelect.append(`<option value="${resource.id}">${resource.title}</option>`);
+            });
+        }
+        
+        function setupResourceEvents() {
+            // Botón guardar recurso
+            $('#saveResourceBtn').off('click').on('click', saveResource);
+            
+            // Limpiar formulario al cerrar modal
+            $('#addResourceModal').on('hidden.bs.modal', function() {
+                $('#addResourceForm')[0].reset();
+            });
+        }
+        
+        function saveResource() {
+            const title = $('#resourceTitle').val().trim();
+            const code = $('#resourceCode').val().trim();
+            const level = $('#resourceLevel').val();
+            const dateStart = $('#resourceDateStart').val();
+            const dateEnd = $('#resourceDateEnd').val();
+            const description = $('#resourceDescription').val().trim();
+            const language = $('#resourceLanguage').val();
+            const script = $('#resourceScript').val().trim();
+            const parentId = $('#resourceParent').val();
+            
+            // Validación básica
+            if (!title) {
+                showToast('Error', 'El título es obligatorio', 'danger');
+                return;
+            }
+            
+            // Obtener recursos existentes
+            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            
+            // Crear nuevo recurso
+            const newResource = {
+                id: resources.length > 0 ? Math.max(...resources.map(r => r.id)) + 1 : 1,
+                title,
+                code,
+                level,
+                dateStart,
+                dateEnd,
+                description,
+                language,
+                script,
+                parentId: parentId ? parseInt(parentId) : null,
+                status: 'Activo',
+                created: new Date().toISOString(),
+                createdBy: getCurrentUser()?.id || null
+            };
+            
+            // Guardar
+            resources.push(newResource);
+            localStorage.setItem('archiveSpaceResources', JSON.stringify(resources));
+            
+            // Mostrar éxito
+            showToast('Éxito', 'Recurso creado correctamente', 'success');
+            
+            // Cerrar modal
+            $('#addResourceModal').modal('hide');
+            
+            // Actualizar tabla
+            setTimeout(() => {
+                loadResourcesTable();
+                loadResourceDropdowns();
+            }, 500);
+        }
+        
+        function viewResource(id) {
+            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            const resource = resources.find(r => r.id === id);
+            
+            if (!resource) {
+                showToast('Error', 'Recurso no encontrado', 'danger');
+                return;
+            }
+            
+            // Cargar detalles en el modal
+            const content = `
+                <div class="row">
+                    <div class="col-md-8">
+                        <h4>${resource.title}</h4>
+                        <p class="text-muted">${resource.description || 'Sin descripción'}</p>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h6>Información Básica</h6>
+                                <table class="table table-sm">
+                                    <tr><td><strong>Código:</strong></td><td>${resource.code || 'N/A'}</td></tr>
+                                    <tr><td><strong>Nivel:</strong></td><td><span class="badge bg-info">${resource.level}</span></td></tr>
+                                    <tr><td><strong>Fechas:</strong></td><td>${formatDateRange(resource.dateStart, resource.dateEnd)}</td></tr>
+                                    <tr><td><strong>Estado:</strong></td><td><span class="badge bg-success">${resource.status}</span></td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Metadatos</h6>
+                                <table class="table table-sm">
+                                    <tr><td><strong>Idioma:</strong></td><td>${resource.language || 'N/A'}</td></tr>
+                                    <tr><td><strong>Escritura:</strong></td><td>${resource.script || 'N/A'}</td></tr>
+                                    <tr><td><strong>Creado:</strong></td><td>${formatDate(resource.created)}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="bi bi-diagram-3"></i> Jerarquía
+                            </div>
+                            <div class="card-body">
+                                ${resource.parentId ? 
+                                    '<p class="text-muted">Este recurso tiene un recurso padre</p>' : 
+                                    '<p class="text-muted">Este es un recurso principal</p>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            $('#resourceDetailContent').html(content);
+            $('#viewResourceModal').modal('show');
+        }
+        
+        function editResource(id) {
+            showToast('Información', 'La edición de recursos estará disponible próximamente', 'info');
+        }
+        
+        function deleteResource(id) {
+            if (!confirm('¿Está seguro de eliminar este recurso? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            const updatedResources = resources.filter(r => r.id !== id);
+            
+            localStorage.setItem('archiveSpaceResources', JSON.stringify(updatedResources));
+            showToast('Éxito', 'Recurso eliminado correctamente', 'success');
+            
+            // Actualizar tabla
+            loadResourcesTable();
+            loadResourceDropdowns();
+        }
+        
+        function exportResources(format) {
+            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            
+            if (resources.length === 0) {
+                showToast('Error', 'No hay recursos para exportar', 'warning');
+                return;
+            }
+            
+            showToast('Exportando', `Exportando ${resources.length} recursos en formato ${format.toUpperCase()}`, 'info');
+            
+            // Simular exportación
+            setTimeout(() => {
+                showToast('Éxito', `Exportación completada (${resources.length} registros)`, 'success');
+            }, 1500);
+        }
+        
+        // Funciones auxiliares
+        function formatDateRange(start, end) {
+            if (!start && !end) return 'N/A';
+            if (start && end) return `${start} - ${end}`;
+            return start || end;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+    </script>
 </body>
 </html>

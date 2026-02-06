@@ -180,32 +180,48 @@ function initializeStorage() {
 }
 
 /**
- * Check if user is authenticated
+ * Check if user is authenticated - FUNCIÓN CORREGIDA
  */
 function checkAuthentication() {
     const currentUser = getCurrentUser();
     const currentPage = window.location.pathname.split('/').pop();
+    
+    console.log('Auth check - Page:', currentPage, 'User:', currentUser);
     
     // Pages that don't require authentication
     const publicPages = ['index.html', 'login.html'];
     
     // If user is not logged in and trying to access protected page
     if (!currentUser && !publicPages.includes(currentPage)) {
+        console.log('No user logged in, redirecting to login');
         window.location.href = 'login.html';
         return false;
     }
     
     // If user is logged in and trying to access login page
     if (currentUser && currentPage === 'login.html') {
+        console.log('User already logged in, redirecting to dashboard');
         window.location.href = 'dashboard.html';
         return false;
     }
     
-    // Check role-based access for admin pages
-    if (currentPage === 'admin-usuarios.html' && currentUser?.role !== 'admin') {
-        showToast('Acceso denegado', 'Solo los administradores pueden acceder a esta página', 'danger');
-        window.location.href = 'dashboard.html';
-        return false;
+    // Check role-based access for admin pages - CORREGIDO
+    if (currentPage === 'admin-usuarios.html') {
+        if (!currentUser) {
+            console.log('No user for admin page, redirecting to login');
+            window.location.href = 'login.html';
+            return false;
+        }
+        
+        if (currentUser.role !== 'admin') {
+            console.log('Non-admin user trying to access admin page');
+            // Show error but don't redirect immediately
+            setTimeout(() => {
+                showToast('Acceso denegado', 'Solo los administradores pueden acceder a esta página', 'danger');
+                window.location.href = 'dashboard.html';
+            }, 100);
+            return false;
+        }
     }
     
     return true;
@@ -409,18 +425,26 @@ function getRecentActivities(limit = 10) {
 }
 
 /**
- * Show toast notification
+ * Show toast notification - FUNCIÓN MEJORADA
  */
 function showToast(title, message, type = 'info') {
     // Remove existing toasts
     $('.toast-container').remove();
+    
+    // Define Bootstrap color classes
+    const colorClasses = {
+        'success': 'bg-success',
+        'danger': 'bg-danger',
+        'warning': 'bg-warning',
+        'info': 'bg-info'
+    };
     
     // Create toast container
     const toastContainer = $('<div>').addClass('toast-container position-fixed top-0 end-0 p-3');
     
     // Create toast
     const toast = $(`
-        <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast align-items-center text-white ${colorClasses[type] || 'bg-primary'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body">
                     <strong>${title}</strong><br>
@@ -436,7 +460,7 @@ function showToast(title, message, type = 'info') {
     $('body').append(toastContainer);
     
     // Initialize and show toast
-    const bsToast = new bootstrap.Toast(toast[0]);
+    const bsToast = new bootstrap.Toast(toast[0], { delay: 5000 });
     bsToast.show();
     
     // Remove after hide
@@ -498,8 +522,87 @@ function hasPermission(permission) {
     return role.permissions.includes('*') || role.permissions.includes(permission);
 }
 
+/**
+ * Login user
+ */
+function login(username, password) {
+    const users = getAllUsers();
+    const user = users.find(u => 
+        u.username === username && 
+        u.password === password && 
+        u.active === true
+    );
+    
+    if (user) {
+        // Update last login
+        user.lastLogin = new Date().toISOString();
+        updateUser(user.id, { lastLogin: user.lastLogin });
+        
+        // Set current user (without password)
+        const { password, ...userWithoutPassword } = user;
+        setCurrentUser(userWithoutPassword);
+        
+        // Log activity
+        logActivity(user.id, 'login', 'Inició sesión en el sistema');
+        
+        return { success: true, user: userWithoutPassword };
+    }
+    
+    return { success: false, message: 'Usuario o contraseña incorrectos' };
+}
+
+/**
+ * Check if user is admin
+ */
+function isAdmin() {
+    const user = getCurrentUser();
+    return user && user.role === 'admin';
+}
+
+/**
+ * Load repositories for dropdown
+ */
+function loadRepositoriesForDropdown(selectElementId) {
+    const select = $(`#${selectElementId}`);
+    if (!select.length) return;
+    
+    select.empty();
+    select.append('<option value="">Seleccionar repositorio...</option>');
+    
+    const repositories = getAllRepositories();
+    repositories.forEach(repo => {
+        select.append(`<option value="${repo.id}">${repo.name}</option>`);
+    });
+}
+
+/**
+ * Load roles for dropdown
+ */
+function loadRolesForDropdown(selectElementId) {
+    const select = $(`#${selectElementId}`);
+    if (!select.length) return;
+    
+    select.empty();
+    select.append('<option value="">Seleccionar rol...</option>');
+    
+    // Solo los 3 roles principales que necesitas
+    const mainRoles = [
+        { name: 'admin', displayName: 'Administrador' },
+        { name: 'archivist', displayName: 'Archivista' },
+        { name: 'reader', displayName: 'Lector' }
+    ];
+    
+    mainRoles.forEach(role => {
+        select.append(`<option value="${role.name}">${role.displayName}</option>`);
+    });
+}
+
 // Make functions available globally
 window.logout = logout;
 window.showToast = showToast;
 window.formatDate = formatDate;
 window.hasPermission = hasPermission;
+window.login = login;
+window.isAdmin = isAdmin;
+window.loadRepositoriesForDropdown = loadRepositoriesForDropdown;
+window.loadRolesForDropdown = loadRolesForDropdown;
