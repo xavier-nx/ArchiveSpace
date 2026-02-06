@@ -10,102 +10,108 @@
     <link rel="stylesheet" href="css/style.css">
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .auth-body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .login-card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+            padding: 2rem 1rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+    </style>
 </head>
 <body class="auth-body">
     <div class="container">
-        <div class="row justify-content-center mt-5">
-            <div class="col-md-6 col-lg-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
                 <!-- Login Card -->
-                <div class="card shadow-lg">
+                <div class="card login-card shadow-lg">
                     <div class="card-header bg-primary text-white text-center">
-                        <h4 class="mb-0">
+                        <h3 class="mb-2">
                             <i class="bi bi-archive"></i> ArchiveSpace
-                        </h4>
+                        </h3>
                         <p class="mb-0">Sistema de Gestión Archivística</p>
                     </div>
                     <div class="card-body p-4">
-                        <!-- Tabs for Auth Methods -->
-                        <ul class="nav nav-tabs mb-4" id="authTab" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="local-tab" data-bs-toggle="tab" data-bs-target="#local" type="button">
-                                    <i class="bi bi-person"></i> Autenticación Local
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="ldap-tab" data-bs-toggle="tab" data-bs-target="#ldap" type="button">
-                                    <i class="bi bi-server"></i> Autenticación LDAP
-                                </button>
-                            </li>
-                        </ul>
-
-                        <!-- Tab Content -->
-                        <div class="tab-content" id="authTabContent">
-                            <!-- Local Auth -->
-                            <div class="tab-pane fade show active" id="local" role="tabpanel">
-                                <form id="localLoginForm">
-                                    <div class="mb-3">
-                                        <label for="username" class="form-label">Usuario</label>
-                                        <input type="text" class="form-control" id="username" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="password" class="form-label">Contraseña</label>
-                                        <input type="password" class="form-control" id="password" required>
-                                    </div>
-                                    <div class="mb-3 form-check">
-                                        <input type="checkbox" class="form-check-input" id="rememberMe">
-                                        <label class="form-check-label" for="rememberMe">Recordar sesión</label>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-                                    </button>
-                                </form>
+                        <!-- Login Form -->
+                        <form id="loginForm">
+                            <div class="mb-4 text-center">
+                                <h5>Iniciar Sesión</h5>
+                                <p class="text-muted">Ingrese sus credenciales para acceder al sistema</p>
                             </div>
-
-                            <!-- LDAP Auth -->
-                            <div class="tab-pane fade" id="ldap" role="tabpanel">
-                                <form id="ldapLoginForm">
-                                    <div class="alert alert-info">
-                                        <small><i class="bi bi-info-circle"></i> Conéctese usando sus credenciales LDAP institucionales</small>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="ldapUsername" class="form-label">Usuario LDAP</label>
-                                        <input type="text" class="form-control" id="ldapUsername" 
-                                               placeholder="usuario@dominio.com" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="ldapPassword" class="form-label">Contraseña</label>
-                                        <input type="password" class="form-control" id="ldapPassword" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="ldapServer" class="form-label">Servidor LDAP (Opcional)</label>
-                                        <select class="form-select" id="ldapServer">
-                                            <option value="default">Servidor por defecto</option>
-                                            <option value="custom">Configuración personalizada</option>
-                                        </select>
-                                    </div>
-                                    <div id="customServerConfig" class="mb-3 d-none">
-                                        <input type="text" class="form-control mt-2" placeholder="ldap://servidor:389">
-                                    </div>
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="bi bi-server"></i> Conectar LDAP
-                                    </button>
-                                </form>
+                            
+                            <div class="mb-3">
+                                <label for="username" class="form-label">
+                                    <i class="bi bi-person"></i> Usuario
+                                </label>
+                                <input type="text" class="form-control" id="username" 
+                                       placeholder="Ingrese su usuario" required>
                             </div>
-                        </div>
+                            
+                            <div class="mb-4">
+                                <label for="password" class="form-label">
+                                    <i class="bi bi-lock"></i> Contraseña
+                                </label>
+                                <input type="password" class="form-control" id="password" 
+                                       placeholder="Ingrese su contraseña" required>
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">
+                                    Recordar sesión
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </button>
+                        </form>
 
                         <!-- Demo Credentials -->
-                        <div class="alert alert-warning mt-4">
-                            <h6><i class="bi bi-lightbulb"></i> Credenciales de Demo</h6>
-                            <small>
-                                <strong>Administrador:</strong> admin / admin123<br>
-                                <strong>Archivista:</strong> archivista / arch123<br>
-                                <strong>Investigador:</strong> investigador / inv123
-                            </small>
+                        <div class="alert alert-info mt-4">
+                            <h6><i class="bi bi-info-circle"></i> Credenciales de Demo</h6>
+                            <div class="small">
+                                <div class="mb-1">
+                                    <strong>Administrador:</strong><br>
+                                    <span class="text-muted">Usuario: <code>admin</code></span><br>
+                                    <span class="text-muted">Contraseña: <code>admin123</code></span>
+                                </div>
+                                <div class="mb-1">
+                                    <strong>Archivista:</strong><br>
+                                    <span class="text-muted">Usuario: <code>archivista</code></span><br>
+                                    <span class="text-muted">Contraseña: <code>arch123</code></span>
+                                </div>
+                                <div>
+                                    <strong>Investigador:</strong><br>
+                                    <span class="text-muted">Usuario: <code>investigador</code></span><br>
+                                    <span class="text-muted">Contraseña: <code>inv123</code></span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Links -->
                         <div class="text-center mt-3">
-                            <a href="index.html" class="text-decoration-none">
+                            <a href="index.html" class="text-decoration-none text-primary">
                                 <i class="bi bi-arrow-left"></i> Volver al inicio
                             </a>
                         </div>
@@ -119,8 +125,163 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <!-- Auth JS -->
-    <script src="js/auth.js"></script>
+    <!-- Common JS -->
     <script src="js/common.js"></script>
+    
+    <!-- JavaScript para el login -->
+    <script>
+        $(document).ready(function() {
+            console.log('Login page loaded');
+            
+            // Verificar si ya hay usuario logueado
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            
+            // Configurar el formulario de login
+            $('#loginForm').on('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+            
+            // Enfocar el campo de usuario al cargar
+            $('#username').focus();
+        });
+        
+        function handleLogin() {
+            const username = $('#username').val().trim();
+            const password = $('#password').val();
+            const rememberMe = $('#rememberMe').is(':checked');
+            
+            // Validación básica
+            if (!username || !password) {
+                showLoginError('Por favor, complete todos los campos');
+                return;
+            }
+            
+            // Mostrar estado de carga
+            const submitBtn = $('#loginForm button[type="submit"]');
+            const originalText = submitBtn.html();
+            submitBtn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validando...');
+            submitBtn.prop('disabled', true);
+            
+            // Intentar login (simulado con delay)
+            setTimeout(() => {
+                const result = performLogin(username, password);
+                
+                if (result.success) {
+                    // Guardar recordar sesión si está marcado
+                    if (rememberMe) {
+                        localStorage.setItem('rememberSession', 'true');
+                    }
+                    
+                    // Redirigir al dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    showLoginError(result.message);
+                    submitBtn.html(originalText);
+                    submitBtn.prop('disabled', false);
+                }
+            }, 1000);
+        }
+        
+        function performLogin(username, password) {
+            // Obtener usuarios del sistema
+            const users = JSON.parse(localStorage.getItem('archiveSpaceUsers') || '[]');
+            
+            // Buscar usuario
+            const user = users.find(u => 
+                u.username === username && 
+                u.password === password && 
+                u.active === true
+            );
+            
+            if (user) {
+                // Actualizar último login
+                user.lastLogin = new Date().toISOString();
+                
+                // Guardar cambios (sin la contraseña para seguridad)
+                const usersCopy = users.map(u => {
+                    if (u.id === user.id) {
+                        return { ...u, lastLogin: user.lastLogin };
+                    }
+                    return u;
+                });
+                localStorage.setItem('archiveSpaceUsers', JSON.stringify(usersCopy));
+                
+                // Crear objeto de sesión (sin contraseña)
+                const sessionUser = {
+                    id: user.id,
+                    username: user.username,
+                    fullName: user.fullName,
+                    email: user.email,
+                    role: user.role,
+                    repositoryId: user.repositoryId
+                };
+                
+                // Guardar usuario en sesión
+                localStorage.setItem('archiveSpaceCurrentUser', JSON.stringify(sessionUser));
+                
+                // Log de actividad
+                const activities = JSON.parse(localStorage.getItem('archiveSpaceActivities') || '[]');
+                activities.push({
+                    id: activities.length + 1,
+                    userId: user.id,
+                    action: 'login',
+                    description: `Inició sesión en el sistema`,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('archiveSpaceActivities', JSON.stringify(activities));
+                
+                return { success: true, user: sessionUser };
+            }
+            
+            return { 
+                success: false, 
+                message: 'Usuario o contraseña incorrectos' 
+            };
+        }
+        
+        function showLoginError(message) {
+            // Remover errores anteriores
+            $('.login-error').remove();
+            
+            // Crear alerta de error
+            const errorAlert = `
+                <div class="alert alert-danger alert-dismissible fade show login-error mt-3" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Insertar después del formulario
+            $('#loginForm').after(errorAlert);
+            
+            // Agitar el formulario para indicar error
+            $('.card').addClass('shake');
+            setTimeout(() => {
+                $('.card').removeClass('shake');
+            }, 500);
+            
+            // Enfocar campo de usuario
+            $('#username').focus();
+        }
+        
+        // Agregar estilo de shake
+        $('<style>')
+            .text(`
+                .shake {
+                    animation: shake 0.5s ease-in-out;
+                }
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-10px); }
+                    75% { transform: translateX(10px); }
+                }
+            `)
+            .appendTo('head');
+    </script>
 </body>
 </html>
