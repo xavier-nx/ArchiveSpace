@@ -11,6 +11,15 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <style>
+        .dataTables_wrapper {
+            padding: 0;
+        }
+        .dataTables_length,
+        .dataTables_filter {
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 <body>
     <!-- Navbar -->
@@ -262,14 +271,14 @@
     <!-- DataTables -->
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-    <!-- Resources JS -->
-    <script src="js/resources.js"></script>
+    <!-- Common JS -->
     <script src="js/common.js"></script>
     
-    <!-- Inline JavaScript corregido -->
+    <!-- Inline JavaScript completamente corregido -->
     <script>
-        // Variable global para la DataTable
+        // Variables globales
         let resourcesDataTable = null;
+        let allResources = [];
         
         $(document).ready(function() {
             console.log('Resources page loading...');
@@ -292,27 +301,144 @@
         function initializeResourcesPage() {
             console.log('Initializing resources page...');
             
-            // Cargar datos iniciales
-            loadResourcesTable();
+            // Inicializar datos de recursos (solo si no existen)
+            initializeResourcesStorage();
+            
+            // Cargar todos los recursos
+            loadAllResources();
+            
+            // Inicializar DataTable
+            initializeDataTable();
+            
+            // Cargar dropdowns
             loadResourceDropdowns();
             
             // Configurar eventos
             setupResourceEvents();
+            
+            // Cargar vista de árbol
+            loadResourceTree();
         }
         
-        function loadResourcesTable() {
-            console.log('Loading resources table...');
+        // FUNCIÓN CORREGIDA: Inicializar storage solo una vez
+        function initializeResourcesStorage() {
+            // Verificar si ya existen recursos
+            const existingResources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
             
-            // Obtener recursos del localStorage
-            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
-            const tbody = $('#resourcesTableBody');
+            if (existingResources.length === 0) {
+                console.log('Initializing sample resources...');
+                
+                // Crear recursos de ejemplo
+                const sampleResources = [
+                    {
+                        id: 1,
+                        title: 'Archivo de la Familia Rodríguez',
+                        code: 'AFR-001',
+                        level: 'fondo',
+                        dateStart: '1850-01-01',
+                        dateEnd: '1950-12-31',
+                        description: 'Documentación familiar de la Familia Rodríguez durante el siglo XIX y XX',
+                        language: 'es',
+                        script: 'Latín',
+                        parentId: null,
+                        status: 'Activo',
+                        agents: [1],
+                        subjects: [1, 2],
+                        created: new Date().toISOString(),
+                        createdBy: 1
+                    },
+                    {
+                        id: 2,
+                        title: 'Correspondencia Comercial',
+                        code: 'CC-001',
+                        level: 'serie',
+                        dateStart: '1900-01-01',
+                        dateEnd: '1920-12-31',
+                        description: 'Cartas y documentos comerciales',
+                        language: 'es',
+                        script: 'Latín',
+                        parentId: 1,
+                        status: 'Activo',
+                        agents: [2],
+                        subjects: [3],
+                        created: new Date().toISOString(),
+                        createdBy: 1
+                    },
+                    {
+                        id: 3,
+                        title: 'Fotografías Familiares',
+                        code: 'FF-001',
+                        level: 'subserie',
+                        dateStart: '1880-01-01',
+                        dateEnd: '1930-12-31',
+                        description: 'Colección de fotografías familiares',
+                        language: null,
+                        script: null,
+                        parentId: 1,
+                        status: 'Activo',
+                        agents: [1],
+                        subjects: [4],
+                        created: new Date().toISOString(),
+                        createdBy: 2
+                    }
+                ];
+                
+                // Inicializar agentes si no existen
+                if (!localStorage.getItem('archiveSpaceAgents')) {
+                    const sampleAgents = [
+                        { id: 1, name: 'Familia Rodríguez', type: 'familia' },
+                        { id: 2, name: 'Empresa Comercial S.A.', type: 'corporación' },
+                        { id: 3, name: 'Juan Pérez', type: 'persona' }
+                    ];
+                    localStorage.setItem('archiveSpaceAgents', JSON.stringify(sampleAgents));
+                }
+                
+                // Inicializar sujetos si no existen
+                if (!localStorage.getItem('archiveSpaceSubjects')) {
+                    const sampleSubjects = [
+                        { id: 1, name: 'Historia familiar' },
+                        { id: 2, name: 'Genealogía' },
+                        { id: 3, name: 'Comercio' },
+                        { id: 4, name: 'Fotografía' }
+                    ];
+                    localStorage.setItem('archiveSpaceSubjects', JSON.stringify(sampleSubjects));
+                }
+                
+                // Guardar recursos de ejemplo
+                localStorage.setItem('archiveSpaceResources', JSON.stringify(sampleResources));
+                allResources = sampleResources;
+            } else {
+                console.log('Resources already exist:', existingResources.length);
+                allResources = existingResources;
+            }
+        }
+        
+        // FUNCIÓN CORREGIDA: Cargar todos los recursos
+        function loadAllResources() {
+            allResources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            console.log('Total resources loaded:', allResources.length);
+            return allResources;
+        }
+        
+        // FUNCIÓN CORREGIDA: Inicializar DataTable
+        function initializeDataTable() {
+            console.log('Initializing DataTable...');
             
-            // Limpiar la tabla
-            tbody.empty();
+            // Destruir DataTable existente si hay una
+            if ($.fn.DataTable.isDataTable('#resourcesTable')) {
+                if (resourcesDataTable) {
+                    resourcesDataTable.destroy();
+                    resourcesDataTable = null;
+                }
+                $('#resourcesTable').removeClass('dataTable');
+            }
             
-            if (resources.length === 0) {
-                // Mostrar mensaje de tabla vacía
-                tbody.append(`
+            // Limpiar el cuerpo de la tabla
+            $('#resourcesTableBody').empty();
+            
+            // Si no hay recursos, mostrar mensaje
+            if (allResources.length === 0) {
+                $('#resourcesTableBody').html(`
                     <tr>
                         <td colspan="9" class="text-center text-muted py-4">
                             <i class="bi bi-folder-x display-6 d-block mb-2"></i>
@@ -321,53 +447,16 @@
                         </td>
                     </tr>
                 `);
-                
-                // Destruir DataTable si existe
-                if ($.fn.DataTable.isDataTable('#resourcesTable')) {
-                    resourcesDataTable?.destroy();
-                    $('#resourcesTable').removeClass('dataTable');
-                }
-                
                 return;
             }
             
-            // Si ya existe una DataTable, destruirla primero
-            if ($.fn.DataTable.isDataTable('#resourcesTable')) {
-                if (resourcesDataTable) {
-                    resourcesDataTable.destroy();
-                }
-                $('#resourcesTable').removeClass('dataTable');
-            }
-            
-            // Llenar la tabla con datos
-            resources.forEach(resource => {
-                const row = `
-                    <tr>
-                        <td>${resource.id}</td>
-                        <td><strong>${resource.title}</strong></td>
-                        <td><code>${resource.code || 'N/A'}</code></td>
-                        <td>${formatDateRange(resource.dateStart, resource.dateEnd)}</td>
-                        <td><span class="badge bg-info">${resource.level}</span></td>
-                        <td><span class="badge bg-success">${resource.status || 'Activo'}</span></td>
-                        <td>${resource.agents?.join(', ') || 'Ninguno'}</td>
-                        <td>${resource.subjects?.join(', ') || 'Ninguno'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="viewResource(${resource.id})">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="editResource(${resource.id})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteResource(${resource.id})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tbody.append(row);
+            // Llenar la tabla con los recursos
+            allResources.forEach(resource => {
+                const row = createResourceTableRow(resource);
+                $('#resourcesTableBody').append(row);
             });
             
-            // Inicializar DataTable solo una vez
+            // Inicializar DataTable
             try {
                 resourcesDataTable = $('#resourcesTable').DataTable({
                     language: {
@@ -375,7 +464,10 @@
                     },
                     pageLength: 10,
                     responsive: true,
-                    order: [[1, 'asc']]
+                    order: [[0, 'desc']], // Ordenar por ID descendente
+                    columnDefs: [
+                        { orderable: false, targets: [8] } // Columna de acciones no ordenable
+                    ]
                 });
                 
                 console.log('DataTable initialized successfully');
@@ -384,6 +476,53 @@
             }
         }
         
+        // Crear fila de tabla para un recurso
+        function createResourceTableRow(resource) {
+            // Obtener agentes y sujetos
+            const agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            const subjects = JSON.parse(localStorage.getItem('archiveSpaceSubjects') || '[]');
+            
+            // Filtrar agentes y sujetos por ID
+            const resourceAgents = resource.agents 
+                ? resource.agents.map(agentId => {
+                    const agent = agents.find(a => a.id === agentId);
+                    return agent ? agent.name : `Agente #${agentId}`;
+                }).join(', ')
+                : 'Ninguno';
+                
+            const resourceSubjects = resource.subjects
+                ? resource.subjects.map(subjectId => {
+                    const subject = subjects.find(s => s.id === subjectId);
+                    return subject ? subject.name : `Tema #${subjectId}`;
+                }).join(', ')
+                : 'Ninguno';
+            
+            return `
+                <tr id="resource-row-${resource.id}">
+                    <td>${resource.id}</td>
+                    <td><strong>${resource.title}</strong></td>
+                    <td><code>${resource.code || 'N/A'}</code></td>
+                    <td>${formatDateRange(resource.dateStart, resource.dateEnd)}</td>
+                    <td><span class="badge bg-info">${resource.level}</span></td>
+                    <td><span class="badge bg-success">${resource.status || 'Activo'}</span></td>
+                    <td>${resourceAgents}</td>
+                    <td>${resourceSubjects}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewResource(${resource.id})">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="editResource(${resource.id})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteResource(${resource.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // FUNCIÓN CORREGIDA: Cargar dropdowns
         function loadResourceDropdowns() {
             console.log('Loading resource dropdowns...');
             
@@ -403,25 +542,27 @@
                 subjectsSelect.append(`<option value="${subject.id}">${subject.name}</option>`);
             });
             
-            // Cargar recursos padre
-            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            // Cargar recursos padre (excluyendo el recurso actual si estamos editando)
             const parentSelect = $('#resourceParent');
             parentSelect.find('option').not(':first').remove();
-            resources.forEach(resource => {
+            allResources.forEach(resource => {
                 parentSelect.append(`<option value="${resource.id}">${resource.title}</option>`);
             });
         }
         
+        // Configurar eventos
         function setupResourceEvents() {
             // Botón guardar recurso
             $('#saveResourceBtn').off('click').on('click', saveResource);
             
-            // Limpiar formulario al cerrar modal
-            $('#addResourceModal').on('hidden.bs.modal', function() {
+            // Limpiar formulario al abrir modal
+            $('#addResourceModal').on('show.bs.modal', function() {
                 $('#addResourceForm')[0].reset();
+                loadResourceDropdowns();
             });
         }
         
+        // FUNCIÓN CORREGIDA: Guardar recurso
         function saveResource() {
             const title = $('#resourceTitle').val().trim();
             const code = $('#resourceCode').val().trim();
@@ -433,35 +574,49 @@
             const script = $('#resourceScript').val().trim();
             const parentId = $('#resourceParent').val();
             
+            // Obtener agentes y sujetos seleccionados
+            const selectedAgents = $('#resourceAgents').val() || [];
+            const selectedSubjects = $('#resourceSubjects').val() || [];
+            
             // Validación básica
             if (!title) {
                 showToast('Error', 'El título es obligatorio', 'danger');
                 return;
             }
             
-            // Obtener recursos existentes
-            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+            // Verificar si el código ya existe
+            if (code) {
+                const existingWithCode = allResources.find(r => r.code === code);
+                if (existingWithCode) {
+                    showToast('Error', 'Ya existe un recurso con este código', 'danger');
+                    return;
+                }
+            }
             
             // Crear nuevo recurso
             const newResource = {
-                id: resources.length > 0 ? Math.max(...resources.map(r => r.id)) + 1 : 1,
+                id: allResources.length > 0 ? Math.max(...allResources.map(r => r.id)) + 1 : 1,
                 title,
-                code,
+                code: code || null,
                 level,
-                dateStart,
-                dateEnd,
-                description,
+                dateStart: dateStart || null,
+                dateEnd: dateEnd || null,
+                description: description || null,
                 language,
-                script,
+                script: script || null,
                 parentId: parentId ? parseInt(parentId) : null,
+                agents: selectedAgents.map(id => parseInt(id)),
+                subjects: selectedSubjects.map(id => parseInt(id)),
                 status: 'Activo',
                 created: new Date().toISOString(),
                 createdBy: getCurrentUser()?.id || null
             };
             
-            // Guardar
-            resources.push(newResource);
-            localStorage.setItem('archiveSpaceResources', JSON.stringify(resources));
+            // Agregar a la lista
+            allResources.push(newResource);
+            
+            // Guardar en localStorage
+            localStorage.setItem('archiveSpaceResources', JSON.stringify(allResources));
             
             // Mostrar éxito
             showToast('Éxito', 'Recurso creado correctamente', 'success');
@@ -471,19 +626,52 @@
             
             // Actualizar tabla
             setTimeout(() => {
-                loadResourcesTable();
-                loadResourceDropdowns();
-            }, 500);
+                refreshResourcesTable();
+            }, 300);
         }
         
+        // FUNCIÓN NUEVA: Refrescar tabla
+        function refreshResourcesTable() {
+            // Recargar recursos
+            loadAllResources();
+            
+            // Re-inicializar DataTable
+            initializeDataTable();
+            
+            // Actualizar dropdowns
+            loadResourceDropdowns();
+            
+            // Actualizar árbol
+            loadResourceTree();
+        }
+        
+        // Ver recurso
         function viewResource(id) {
-            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
-            const resource = resources.find(r => r.id === id);
+            const resource = allResources.find(r => r.id === id);
             
             if (!resource) {
                 showToast('Error', 'Recurso no encontrado', 'danger');
                 return;
             }
+            
+            // Obtener agentes y sujetos
+            const agents = JSON.parse(localStorage.getItem('archiveSpaceAgents') || '[]');
+            const subjects = JSON.parse(localStorage.getItem('archiveSpaceSubjects') || '[]');
+            
+            // Formatear agentes y sujetos
+            const resourceAgents = resource.agents 
+                ? resource.agents.map(agentId => {
+                    const agent = agents.find(a => a.id === agentId);
+                    return agent ? `<span class="badge bg-primary me-1">${agent.name}</span>` : '';
+                }).join('')
+                : '<span class="text-muted">Ninguno</span>';
+                
+            const resourceSubjects = resource.subjects
+                ? resource.subjects.map(subjectId => {
+                    const subject = subjects.find(s => s.id === subjectId);
+                    return subject ? `<span class="badge bg-secondary me-1">${subject.name}</span>` : '';
+                }).join('')
+                : '<span class="text-muted">Ninguno</span>';
             
             // Cargar detalles en el modal
             const content = `
@@ -496,6 +684,7 @@
                             <div class="col-md-6">
                                 <h6>Información Básica</h6>
                                 <table class="table table-sm">
+                                    <tr><td><strong>ID:</strong></td><td>${resource.id}</td></tr>
                                     <tr><td><strong>Código:</strong></td><td>${resource.code || 'N/A'}</td></tr>
                                     <tr><td><strong>Nivel:</strong></td><td><span class="badge bg-info">${resource.level}</span></td></tr>
                                     <tr><td><strong>Fechas:</strong></td><td>${formatDateRange(resource.dateStart, resource.dateEnd)}</td></tr>
@@ -507,8 +696,20 @@
                                 <table class="table table-sm">
                                     <tr><td><strong>Idioma:</strong></td><td>${resource.language || 'N/A'}</td></tr>
                                     <tr><td><strong>Escritura:</strong></td><td>${resource.script || 'N/A'}</td></tr>
+                                    <tr><td><strong>Recurso Padre:</strong></td><td>${resource.parentId ? 'Sí' : 'No'}</td></tr>
                                     <tr><td><strong>Creado:</strong></td><td>${formatDate(resource.created)}</td></tr>
                                 </table>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h6>Agentes Asociados</h6>
+                                <div class="mb-3">${resourceAgents}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Temas/Sujetos</h6>
+                                <div class="mb-3">${resourceSubjects}</div>
                             </div>
                         </div>
                     </div>
@@ -523,6 +724,20 @@
                                     '<p class="text-muted">Este es un recurso principal</p>'}
                             </div>
                         </div>
+                        
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <i class="bi bi-gear"></i> Acciones
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-primary w-100 mb-2" onclick="editResource(${resource.id})">
+                                    <i class="bi bi-pencil"></i> Editar Recurso
+                                </button>
+                                <button class="btn btn-danger w-100" onclick="confirmDeleteResource(${resource.id})">
+                                    <i class="bi bi-trash"></i> Eliminar Recurso
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -531,47 +746,132 @@
             $('#viewResourceModal').modal('show');
         }
         
+        // Editar recurso
         function editResource(id) {
-            showToast('Información', 'La edición de recursos estará disponible próximamente', 'info');
+            showToast('Información', 'La edición de recursos estará disponible en la próxima versión', 'info');
         }
         
-        function deleteResource(id) {
-            if (!confirm('¿Está seguro de eliminar este recurso? Esta acción no se puede deshacer.')) {
+        // FUNCIÓN CORREGIDA: Confirmar eliminación
+        function confirmDeleteResource(id) {
+            const resource = allResources.find(r => r.id === id);
+            
+            if (!resource) {
+                showToast('Error', 'Recurso no encontrado', 'danger');
                 return;
             }
             
-            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
-            const updatedResources = resources.filter(r => r.id !== id);
+            // Verificar si tiene recursos hijos
+            const hasChildren = allResources.some(r => r.parentId === id);
             
-            localStorage.setItem('archiveSpaceResources', JSON.stringify(updatedResources));
-            showToast('Éxito', 'Recurso eliminado correctamente', 'success');
+            let message = `¿Está seguro de eliminar el recurso "${resource.title}"?`;
+            if (hasChildren) {
+                message += '\n\n⚠️ ADVERTENCIA: Este recurso tiene recursos hijos. Al eliminarlo, también se eliminarán sus recursos hijos.';
+            }
             
-            // Actualizar tabla
-            loadResourcesTable();
-            loadResourceDropdowns();
+            if (confirm(message)) {
+                deleteResource(id);
+            }
         }
         
-        function exportResources(format) {
-            const resources = JSON.parse(localStorage.getItem('archiveSpaceResources') || '[]');
+        // FUNCIÓN CORREGIDA: Eliminar recurso
+        function deleteResource(id) {
+            // Filtrar para eliminar el recurso y sus hijos
+            const originalCount = allResources.length;
+            allResources = allResources.filter(r => {
+                // Eliminar el recurso
+                if (r.id === id) return false;
+                // Eliminar recursos hijos (opcional, depende de tu lógica)
+                if (r.parentId === id) return false;
+                return true;
+            });
             
-            if (resources.length === 0) {
+            const deletedCount = originalCount - allResources.length;
+            
+            // Guardar cambios
+            localStorage.setItem('archiveSpaceResources', JSON.stringify(allResources));
+            
+            // Mostrar mensaje
+            showToast('Éxito', `Recurso eliminado correctamente (${deletedCount} registros eliminados)`, 'success');
+            
+            // Actualizar interfaz
+            refreshResourcesTable();
+            
+            // Cerrar modales si están abiertos
+            $('#viewResourceModal').modal('hide');
+        }
+        
+        // Exportar recursos
+        function exportResources(format) {
+            if (allResources.length === 0) {
                 showToast('Error', 'No hay recursos para exportar', 'warning');
                 return;
             }
             
-            showToast('Exportando', `Exportando ${resources.length} recursos en formato ${format.toUpperCase()}`, 'info');
+            showToast('Exportando', `Exportando ${allResources.length} recursos en formato ${format.toUpperCase()}`, 'info');
             
             // Simular exportación
             setTimeout(() => {
-                showToast('Éxito', `Exportación completada (${resources.length} registros)`, 'success');
+                showToast('Éxito', `Exportación completada (${allResources.length} registros)`, 'success');
             }, 1500);
+        }
+        
+        // Cargar vista de árbol
+        function loadResourceTree() {
+            const treeContainer = $('#resourceTree');
+            
+            if (allResources.length === 0) {
+                treeContainer.html(`
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No hay recursos para mostrar en la vista jerárquica.
+                    </div>
+                `);
+                return;
+            }
+            
+            // Construir árbol simple
+            let treeHtml = '<ul class="list-unstyled">';
+            
+            // Obtener recursos principales (sin padre)
+            const mainResources = allResources.filter(r => !r.parentId);
+            
+            mainResources.forEach(resource => {
+                treeHtml += buildTreeNode(resource, 0);
+            });
+            
+            treeHtml += '</ul>';
+            treeContainer.html(treeHtml);
+        }
+        
+        // Construir nodo del árbol
+        function buildTreeNode(resource, depth) {
+            let html = `<li style="margin-left: ${depth * 20}px;">`;
+            html += `<i class="bi bi-folder me-2"></i> <strong>${resource.title}</strong>`;
+            html += ` <small class="text-muted">(${resource.code || 'Sin código'})</small>`;
+            
+            // Buscar hijos
+            const children = allResources.filter(r => r.parentId === resource.id);
+            if (children.length > 0) {
+                html += '<ul class="list-unstyled">';
+                children.forEach(child => {
+                    html += buildTreeNode(child, depth + 1);
+                });
+                html += '</ul>';
+            }
+            
+            html += '</li>';
+            return html;
         }
         
         // Funciones auxiliares
         function formatDateRange(start, end) {
             if (!start && !end) return 'N/A';
-            if (start && end) return `${start} - ${end}`;
-            return start || end;
+            if (start && end) {
+                // Formatear solo el año si las fechas son completas
+                const startYear = start.substring(0, 4);
+                const endYear = end.substring(0, 4);
+                return `${startYear} - ${endYear}`;
+            }
+            return start ? start.substring(0, 4) : end.substring(0, 4);
         }
         
         function formatDate(dateString) {
@@ -580,7 +880,9 @@
             return date.toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'short',
-                day: 'numeric'
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             });
         }
     </script>
