@@ -107,12 +107,30 @@ async function handleLogout() {
 function mostrarLogin() {
     document.getElementById('loginScreen').classList.add('active');
     document.getElementById('dashboardScreen').classList.remove('active');
-    document.getElementById('loginForm').reset();
+    
+    // Resetear formulario
+    const loginForm = document.getElementById('loginForm');
+    loginForm.reset();
+    
+    // Resetear botón de submit
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+    
+    // Limpiar mensajes de error
+    const messageEl = document.getElementById('loginMessage');
+    messageEl.className = 'message';
+    messageEl.textContent = '';
+    
+    window.scrollTo(0, 0);
 }
 
 function mostrarDashboard() {
     document.getElementById('loginScreen').classList.remove('active');
     document.getElementById('dashboardScreen').classList.add('active');
+    
+    // Scroll al inicio de la página
+    window.scrollTo(0, 0);
     
     // Mostrar info del usuario
     document.getElementById('userNameDisplay').textContent = currentUser.nombre;
