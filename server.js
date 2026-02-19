@@ -17,7 +17,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Cambiar a true en producción con HTTPS
+        secure: false,
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000 // 24 horas
     }
@@ -38,7 +38,7 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/carpetas', carpetasRoutes);
 app.use('/api/archivos', archivosRoutes);
 
-// Ruta principal - servir index.html
+// Ruta principal
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -55,12 +55,12 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════════╗
-║   🗂️  SISTEMA ARCHIVÍSTICO                    ║
+║   🗂️  SISTEMA ARCHIVÍSTICO v2.0               ║
 ╠═══════════════════════════════════════════════╣
 ║   Servidor corriendo en:                      ║
 ║   http://localhost:${PORT}                        ║
 ║                                               ║
-║   Entorno: ${process.env.NODE_ENV || 'development'}                     ║
+║   Usuario: admin / Contraseña: admin123      ║
 ╚═══════════════════════════════════════════════╝
     `);
 });

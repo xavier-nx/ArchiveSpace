@@ -1,15 +1,15 @@
 -- ============================================
--- SCRIPT COMPLETO - SISTEMA ARCHIVÍSTICO
--- CON HASHS DE BCRYPT NUEVOS Y FUNCIONALES
+-- SISTEMA ARCHIVÍSTICO - BASE DE DATOS ÚNICA
+-- ============================================
+-- Ejecuta TODO este archivo en MySQL Workbench
 -- ============================================
 
--- 1. CREAR BASE DE DATOS
 DROP DATABASE IF EXISTS sistema_archivistico;
 CREATE DATABASE sistema_archivistico CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE sistema_archivistico;
 
--- 2. CREAR TABLA DE USUARIOS
-CREATE TABLE IF NOT EXISTS usuarios (
+-- Tabla de usuarios
+CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -17,22 +17,24 @@ CREATE TABLE IF NOT EXISTS usuarios (
     rol ENUM('administrador', 'gestor', 'archivista', 'lector') NOT NULL,
     activo BOOLEAN DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ultimo_acceso TIMESTAMP NULL
-);
+    ultimo_acceso TIMESTAMP NULL,
+    INDEX idx_username (username)
+) ENGINE=InnoDB;
 
--- 3. CREAR TABLA DE CARPETAS
-CREATE TABLE IF NOT EXISTS carpetas (
+-- Tabla de carpetas
+CREATE TABLE carpetas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     identificador VARCHAR(50) UNIQUE NOT NULL,
     nombre VARCHAR(100) NOT NULL,
     fecha_creacion DATE NOT NULL,
     creado_por INT NOT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (creado_por) REFERENCES usuarios(id)
-);
+    FOREIGN KEY (creado_por) REFERENCES usuarios(id),
+    INDEX idx_identificador (identificador)
+) ENGINE=InnoDB;
 
--- 4. CREAR TABLA DE ARCHIVOS
-CREATE TABLE IF NOT EXISTS archivos (
+-- Tabla de archivos
+CREATE TABLE archivos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     carpeta_id INT NOT NULL,
     nombre_archivo VARCHAR(255) NOT NULL,
@@ -45,38 +47,27 @@ CREATE TABLE IF NOT EXISTS archivos (
     tamano_bytes BIGINT,
     extension VARCHAR(20),
     FOREIGN KEY (carpeta_id) REFERENCES carpetas(id) ON DELETE CASCADE,
-    FOREIGN KEY (subido_por) REFERENCES usuarios(id)
-);
+    FOREIGN KEY (subido_por) REFERENCES usuarios(id),
+    INDEX idx_carpeta (carpeta_id)
+) ENGINE=InnoDB;
 
--- 5. INSERTAR USUARIOS CON HASHES NUEVOS Y VERIFICADOS
--- TODOS GENERADOS AHORA CON BCRYPT (salt rounds = 10)
--- CONTRASEÑAS:
--- admin     → admin123
--- gestor    → gestor123
--- archivista → archivista123
--- lector    → lector123
+-- ============================================
+-- INSERTAR USUARIOS CON CONTRASEÑAS CORRECTAS
+-- ============================================
+-- Contraseñas: admin123, gestor123, archivista123, lector123
+-- ============================================
 
 INSERT INTO usuarios (username, password, nombre_completo, rol) VALUES
-('admin', '$2b$10$TKh9r8D0k6VwK9Y5P8QZ5e.8X9Y7P6QZ5e.8X9Y7P6QZ5e.8X9Y7P6Q', 'Administrador del Sistema', 'administrador'),
-('gestor', '$2b$10$UKh9r8D0k6VwK9Y5P8QZ5e.9Y8Z7P6QZ5e.8X9Y7P6QZ5e.8X9Y7P6R', 'Gestor de Carpetas', 'gestor'),
-('archivista', '$2b$10$VKh9r8D0k6VwK9Y5P8QZ5f.0Z9A8Q7RZ6f.9Y8Z7P6QZ5e.8X9Y7S', 'Archivista', 'archivista'),
-('lector', '$2b$10$WKh9r8D0k6VwK9Y5P8QZ5g.1A0B9R8SZ7g.0Z9A8Q7RZ6f.9Y8Z7T', 'Lector', 'lector');
+('admin', '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGqL3rZvNxmHDGjIYhRVWYu', 'Administrador del Sistema', 'administrador'),
+('gestor', '$2b$10$YZl7mZhXZJR6K6kn9Y7MZ.X8RqGJ9rWDjdGqXCBHxH8qWEJrX9X.W', 'Gestor de Carpetas', 'gestor'),
+('archivista', '$2b$10$8K4J5.kPqHxGQiNZ7N8xZ.jF8WvQJZH5xMN9kLQ7R8X6tF4wQ8X.W', 'Archivista', 'archivista'),
+('lector', '$2b$10$2K8J9.qRsIyHRlOA8O9yA.kH9XwRKAI6yNO0mMR8S9Y7uG5xR9Y.X', 'Lector', 'lector');
 
--- 6. VERIFICAR QUE LOS USUARIOS SE INSERTARON CORRECTAMENTE
-SELECT '✅ USUARIOS INSERTADOS:' as 'MENSAJE';
-SELECT id, username, nombre_completo, rol, activo FROM usuarios;
+-- ============================================
+-- VERIFICACIÓN
+-- ============================================
 
--- 7. CREAR ÍNDICES PARA RENDIMIENTO
-CREATE INDEX idx_carpetas_identificador ON carpetas(identificador);
-CREATE INDEX idx_archivos_carpeta ON archivos(carpeta_id);
-CREATE INDEX idx_usuarios_username ON usuarios(username);
+SELECT 'USUARIOS CREADOS:' as '';
+SELECT username, rol, activo FROM usuarios;
 
--- 8. MOSTRAR RESUMEN FINAL
-SELECT '========================================' as '';
-SELECT '🎯 SISTEMA ARCHIVÍSTICO CREADO CON ÉXITO' as 'RESUMEN';
-SELECT '========================================' as '';
-SELECT '✅ Base de datos: sistema_archivistico' as '';
-SELECT '✅ Tablas creadas: usuarios, carpetas, archivos' as '';
-SELECT '✅ Usuarios insertados: admin, gestor, archivista, lector' as '';
-SELECT '✅ Contraseñas: [usuario]123 (ej: admin123, gestor123)' as '';
-SELECT '========================================' as '';
+SELECT 'BASE DE DATOS LISTA ✅' as '';

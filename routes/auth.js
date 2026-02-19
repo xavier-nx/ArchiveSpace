@@ -1,19 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 
-// Login
-router.post('/login', async (req, res) => {
+// Login CON VALIDACIÓN
+router.post('/login', [
+    body('username').trim().notEmpty().withMessage('El usuario es requerido'),
+    body('password').notEmpty().withMessage('La contraseña es requerida')
+], async (req, res) => {
     try {
-        const { username, password } = req.body;
-
-        if (!username || !password) {
+        // Validar errores
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Usuario y contraseña son requeridos' 
+                message: errors.array()[0].msg 
             });
         }
+
+        const { username, password } = req.body;
 
         // Buscar usuario
         const [users] = await db.query(

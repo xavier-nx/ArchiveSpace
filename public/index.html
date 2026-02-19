@@ -67,13 +67,17 @@
             <!-- Sidebar -->
             <aside class="sidebar">
                 <ul class="sidebar-menu">
-                    <li class="menu-item active" data-section="carpetas">
+                    <li class="menu-item active" data-section="dashboard">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </li>
+                    <li class="menu-item" data-section="carpetas">
                         <i class="fas fa-folder"></i>
                         <span>Carpetas</span>
                     </li>
                     <li class="menu-item" data-section="archivos">
                         <i class="fas fa-file"></i>
-                        <span>Ver Archivos</span>
+                        <span>Archivos</span>
                     </li>
                     <li class="menu-item admin-only" data-section="usuarios" style="display: none;">
                         <i class="fas fa-users"></i>
@@ -84,8 +88,15 @@
 
             <!-- Contenido principal -->
             <main class="main-content">
+                <!-- Sección de Dashboard -->
+                <section id="dashboardSection" class="content-section active">
+                    <div id="dashboardContainer">
+                        <div class="loading">Cargando dashboard...</div>
+                    </div>
+                </section>
+
                 <!-- Sección de Carpetas -->
-                <section id="carpetasSection" class="content-section active">
+                <section id="carpetasSection" class="content-section">
                     <div class="section-header">
                         <h2><i class="fas fa-folder"></i> Gestión de Carpetas</h2>
                         <button id="btnNuevaCarpeta" class="btn btn-primary admin-gestor-only" style="display: none;">
@@ -136,14 +147,15 @@
                 </button>
             </div>
             
-            <form id="formCarpeta">
+            <form id="formCarpeta" novalidate>
                 <input type="hidden" id="carpetaId">
                 
                 <div class="form-group">
-                    <label for="carpetaNombre">Nombre de la Carpeta</label>
+                    <label for="carpetaNombre">Nombre de la Carpeta <span class="required">*</span></label>
                     <input type="text" id="carpetaNombre" required 
                            placeholder="Nombre descriptivo">
                     <small>El identificador se generará automáticamente</small>
+                    <small class="error-message" id="errorCarpetaNombre"></small>
                 </div>
                 
                 <div class="form-group">
@@ -153,8 +165,9 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="carpetaFecha">Fecha de Creación</label>
+                    <label for="carpetaFecha">Fecha de Creación <span class="required">*</span></label>
                     <input type="date" id="carpetaFecha" required>
+                    <small class="error-message" id="errorCarpetaFecha"></small>
                 </div>
                 
                 <div class="modal-footer">
@@ -179,29 +192,61 @@
                 </button>
             </div>
             
-            <form id="formArchivo" enctype="multipart/form-data">
+            <form id="formArchivo" enctype="multipart/form-data" novalidate>
                 <div class="form-group">
-                    <label for="archivoCarpeta">Carpeta de Destino</label>
+                    <label for="archivoCarpeta">Carpeta de Destino <span class="required">*</span></label>
                     <select id="archivoCarpeta" required>
                         <option value="">Selecciona una carpeta</option>
                     </select>
+                    <small class="error-message" id="errorArchivoCarpeta"></small>
                 </div>
-                
+
+                <!-- Selector de tipo de archivo -->
                 <div class="form-group">
-                    <label for="archivo">Archivo</label>
-                    <input type="file" id="archivo" name="archivo" required>
+                    <label>Tipo de Archivo <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="tipoArchivo" value="fisico" checked onchange="cambiarTipoArchivo()">
+                            <span>📁 Archivo Físico (Subir desde computadora)</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="tipoArchivo" value="digital" onchange="cambiarTipoArchivo()">
+                            <span>🔗 Enlace Digital (URL/Link)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Grupo para archivo físico -->
+                <div class="form-group" id="grupoArchivoFisico">
+                    <label for="archivo">Seleccionar Archivo <span class="required">*</span></label>
+                    <input type="file" id="archivo" name="archivo">
                     <small>Tamaño máximo: 50MB</small>
+                    <small class="error-message" id="errorArchivo"></small>
+                </div>
+
+                <!-- Grupo para enlace digital -->
+                <div class="form-group" id="grupoEnlaceDigital" style="display: none;">
+                    <label for="enlaceDigital">Enlace del Documento <span class="required">*</span></label>
+                    <input type="url" id="enlaceDigital" placeholder="https://ejemplo.com/documento.pdf">
+                    <small>Ingresa la URL completa del documento</small>
+                    <small class="error-message" id="errorEnlace"></small>
+                </div>
+
+                <div class="form-group" id="grupoNombreArchivo" style="display: none;">
+                    <label for="nombreArchivo">Nombre del Documento <span class="required">*</span></label>
+                    <input type="text" id="nombreArchivo" placeholder="Ej: Reporte Anual 2024.pdf">
+                    <small class="error-message" id="errorNombreArchivo"></small>
                 </div>
                 
                 <div class="form-group">
                     <label for="archivoAutor">Autor del Documento</label>
-                    <input type="text" id="archivoAutor" required 
-                           placeholder="Nombre del autor">
+                    <input type="text" id="archivoAutor" placeholder="Nombre del autor (opcional)">
                 </div>
                 
                 <div class="form-group">
-                    <label for="archivoFecha">Fecha del Documento</label>
+                    <label for="archivoFecha">Fecha del Documento <span class="required">*</span></label>
                     <input type="date" id="archivoFecha" required>
+                    <small class="error-message" id="errorArchivoFecha"></small>
                 </div>
                 
                 <div class="modal-footer">
@@ -209,7 +254,7 @@
                         Cancelar
                     </button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Subir Archivo
+                        <i class="fas fa-upload"></i> Guardar
                     </button>
                 </div>
             </form>
@@ -226,33 +271,41 @@
                 </button>
             </div>
             
-            <form id="formUsuario">
+            <form id="formUsuario" novalidate>
                 <div class="form-group">
-                    <label for="usuarioUsername">Nombre de Usuario</label>
+                    <label for="usuarioUsername">Nombre de Usuario <span class="required">*</span></label>
                     <input type="text" id="usuarioUsername" required 
-                           placeholder="usuario123">
+                           placeholder="usuario123" minlength="3">
+                    <small>Mínimo 3 caracteres</small>
+                    <small class="error-message" id="errorUsuarioUsername"></small>
                 </div>
                 
                 <div class="form-group">
-                    <label for="usuarioPassword">Contraseña</label>
+                    <label for="usuarioPassword">Contraseña <span class="required">*</span></label>
                     <input type="password" id="usuarioPassword" required 
-                           placeholder="Mínimo 6 caracteres">
+                           placeholder="Mínimo 6 caracteres" minlength="6">
+                    <small>Mínimo 6 caracteres</small>
+                    <small class="error-message" id="errorUsuarioPassword"></small>
                 </div>
                 
                 <div class="form-group">
-                    <label for="usuarioNombre">Nombre Completo</label>
+                    <label for="usuarioNombre">Nombre Completo <span class="required">*</span></label>
                     <input type="text" id="usuarioNombre" required 
-                           placeholder="Juan Pérez">
+                           placeholder="Juan Pérez" minlength="3">
+                    <small>Mínimo 3 caracteres</small>
+                    <small class="error-message" id="errorUsuarioNombre"></small>
                 </div>
                 
                 <div class="form-group">
-                    <label for="usuarioRol">Rol</label>
+                    <label for="usuarioRol">Rol <span class="required">*</span></label>
                     <select id="usuarioRol" required>
+                        <option value="">Selecciona un rol</option>
                         <option value="lector">Lector</option>
                         <option value="archivista">Archivista</option>
                         <option value="gestor">Gestor de Carpetas</option>
                         <option value="administrador">Administrador</option>
                     </select>
+                    <small class="error-message" id="errorUsuarioRol"></small>
                 </div>
                 
                 <div class="modal-footer">
@@ -268,5 +321,69 @@
     </div>
 
     <script src="/js/app.js"></script>
+</body>
+</html>
+
+    <!-- Modal de Confirmación -->
+    <div id="modalConfirmacion" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header modal-header-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3 id="confirmacionTitulo">Confirmar Acción</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmacionMensaje">¿Estás seguro de realizar esta acción?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalConfirmacion()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarAccion">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Notificación -->
+    <div id="modalNotificacion" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header" id="notificacionHeader">
+                <i class="fas fa-info-circle" id="notificacionIcono"></i>
+                <h3 id="notificacionTitulo">Notificación</h3>
+            </div>
+            <div class="modal-body">
+                <p id="notificacionMensaje">Mensaje de notificación</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="cerrarModalNotificacion()">
+                    <i class="fas fa-check"></i> Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Prompt (para resetear contraseñas) -->
+    <div id="modalPrompt" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <i class="fas fa-keyboard"></i>
+                <h3 id="promptTitulo">Ingresa el valor</h3>
+            </div>
+            <div class="modal-body">
+                <p id="promptMensaje">Por favor ingresa:</p>
+                <input type="text" id="promptInput" class="form-control" placeholder="Escribe aquí...">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalPrompt()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarPrompt">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

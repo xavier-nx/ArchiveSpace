@@ -1,7 +1,6 @@
 require('dotenv').config();
 const mysql = require('mysql2');
 
-// Crear pool de conexiones
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -13,13 +12,15 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Convertir a promesas para usar async/await
 const promisePool = pool.promise();
 
-// Verificar conexión
 pool.getConnection((err, connection) => {
     if (err) {
-        console.error('❌ Error conectando a la base de datos:', err.message);
+        console.error('❌ Error conectando a MySQL:', err.message);
+        console.log('\n💡 Verifica:');
+        console.log('   1. MySQL está corriendo');
+        console.log('   2. Credenciales en .env son correctas');
+        console.log('   3. La base de datos existe\n');
         return;
     }
     console.log('✅ Conexión exitosa a MySQL');

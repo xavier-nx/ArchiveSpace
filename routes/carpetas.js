@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { requireAdminOrGestor, requireAuth } = require('../middleware/auth');
 
@@ -26,49 +27,25 @@ router.get('/', requireAuth, async (req, res) => {
     }
 });
 
-// Obtener carpeta por ID
-router.get('/:id', requireAuth, async (req, res) => {
+// Crear nueva carpeta CON VALIDACIÓN
+router.post('/', requireAdminOrGestor, [
+    body('identificador').trim().notEmpty().withMessage('El identificador es requerido')
+        .isLength({ max: 50 }).withMessage('El identificador no puede exceder 50 caracteres'),
+    body('nombre').trim().notEmpty().withMessage('El nombre es requerido')
+        .isLength({ max: 100 }).withMessage('El nombre no puede exceder 100 caracteres'),
+    body('fecha_creacion').notEmpty().withMessage('La fecha de creación es requerida')
+        .isDate().withMessage('Fecha inválida')
+], async (req, res) => {
     try {
-        const { id } = req.params;
-
-        const [carpetas] = await db.query(`
-            SELECT c.*, u.nombre_completo as creador
-            FROM carpetas c
-            LEFT JOIN usuarios u ON c.creado_por = u.id
-            WHERE c.id = ?
-        `, [id]);
-
-        if (carpetas.length === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Carpeta no encontrada' 
-            });
-        }
-
-        res.json({
-            success: true,
-            carpeta: carpetas[0]
-        });
-    } catch (error) {
-        console.error('Error obteniendo carpeta:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error al obtener carpeta' 
-        });
-    }
-});
-
-// Crear nueva carpeta (Solo admin y gestor)
-router.post('/', requireAdminOrGestor, async (req, res) => {
-    try {
-        const { identificador, nombre, fecha_creacion } = req.body;
-
-        if (!identificador || !nombre || !fecha_creacion) {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Identificador, nombre y fecha de creación son requeridos' 
+                message: errors.array()[0].msg 
             });
         }
+
+        const { identificador, nombre, fecha_creacion } = req.body;
 
         // Verificar si el identificador ya existe
         const [existing] = await db.query(
@@ -103,51 +80,7 @@ router.post('/', requireAdminOrGestor, async (req, res) => {
     }
 });
 
-// Actualizar carpeta
-router.put('/:id', requireAdminOrGestor, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { identificador, nombre, fecha_creacion } = req.body;
-
-        if (!identificador || !nombre || !fecha_creacion) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Todos los campos son requeridos' 
-            });
-        }
-
-        // Verificar si el identificador ya existe en otra carpeta
-        const [existing] = await db.query(
-            'SELECT id FROM carpetas WHERE identificador = ? AND id != ?',
-            [identificador, id]
-        );
-
-        if (existing.length > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'El identificador ya existe' 
-            });
-        }
-
-        await db.query(
-            'UPDATE carpetas SET identificador = ?, nombre = ?, fecha_creacion = ? WHERE id = ?',
-            [identificador, nombre, fecha_creacion, id]
-        );
-
-        res.json({
-            success: true,
-            message: 'Carpeta actualizada exitosamente'
-        });
-    } catch (error) {
-        console.error('Error actualizando carpeta:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error al actualizar carpeta' 
-        });
-    }
-});
-
-// Eliminar carpeta (Solo admin y gestor)
+// Eliminar carpeta
 router.delete('/:id', requireAdminOrGestor, async (req, res) => {
     try {
         const { id } = req.params;
